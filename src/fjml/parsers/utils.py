@@ -7,7 +7,7 @@ from typing import (
     Final,
     NoReturn
 )
-from types import MethodType
+from types import MethodType, ModuleType
 from functools import lru_cache
 import importlib
 import asyncio
@@ -21,7 +21,7 @@ from datetime import datetime
 
 from .constants import ARCHIVE_FORMAT
 
-import_module = lru_cache(16)(importlib.import_module)
+import_module: Callable[[str, Optional[str]], ModuleType] = lru_cache(32)(importlib.import_module)
 
 class ProgramImporter:
     
@@ -230,8 +230,8 @@ class Validator:
         if self.dtype == "currency": return self.is_float(data)
     
     def is_float(string: str) -> bool:
-        pattern = r"[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?"
-        match = re.match(pattern, string)
+        pattern: str = r"[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?"
+        match: Optional[re.Match[str]] = re.match(pattern, string)
         return bool(match)
     
     def validate_dates(date: str, date_format: str) -> bool:
