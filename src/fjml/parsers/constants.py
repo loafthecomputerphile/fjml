@@ -1,8 +1,13 @@
 from typing import Final, Any
+import os.path
+
+module_dir: str = os.path.dirname(
+    os.path.dirname(__file__)
+)
 
 ARCHIVE_FORMAT: Final[str] = "zip"
 OPERATION_ARGS: Final[list[str]] = ["make", "pack", "unpack"]
-CONTROL_REGISTRY_PATH: Final[str] = "registry/control_registry.json"
+CONTROL_REGISTRY_PATH: Final[str] = os.path.join(module_dir,"registry\\control_registry.json")
 RANGE_PARAM_LENGTH: Final[set[int]] = {1,2,3}
 
 FUNCTION_FILE_TEXT: Final[str] = """
