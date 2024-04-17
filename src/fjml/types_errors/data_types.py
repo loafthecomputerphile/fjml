@@ -12,6 +12,7 @@ import flet as ft
 
 from ..parsers import utils
 
+import_module = utils.import_module
 Tools: utils.Utilities = utils.Utilities()
 
 __all__ = [
@@ -289,8 +290,9 @@ class ControlRegistryModel:
         
         if not callable(self.source):
             self.object_args: list[str] = Tools.get_object_args(
-                Tools.load_object(
-                    self.source, None,  self.attr
+                getattr(
+                    import_module(self.source, None),
+                    self.attr
                 )
             )
         else:
