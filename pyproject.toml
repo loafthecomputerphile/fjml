@@ -2,18 +2,24 @@
 
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+dependencies = [
+  "flet>=0.22.0",
+  "nest_asyncio>=1.5.9",
+  "typing_extensions>=4.11.0"
+]
 
 [project]
 name = "fjml"
 version = "0.0.1"
 authors = [
-  { name="Loaf", email="author@example.com" },
+  { name="loafthecomputerphile", email="loafdcomputerphile@gmail.com" },
 ]
 description = "A small example package"
 readme = "README.md"
+keywords = ["flet", "gui"]
 requires-python = ">=3.8"
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]

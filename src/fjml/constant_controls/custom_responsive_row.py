@@ -48,7 +48,7 @@ def fill_forward(data: dict[str, int], column_const: int) -> dict[str, int]:
     return data
 
 
-def return_new_width(parent_width: float, column_const: float, assignments: Optional[dict[str, int]], spacing: int) -> int:
+def return_new_width(parent_width: float, column_const: float, assignments: Optional[dict[str, int]], spacing: float) -> float:
     sizes: dict[str, int]
     
     if not assignments:

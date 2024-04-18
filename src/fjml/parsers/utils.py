@@ -21,7 +21,7 @@ from datetime import datetime
 
 from .constants import ARCHIVE_FORMAT
 
-import_module: Callable[[str, Optional[str]], ModuleType] = lru_cache(32)(importlib.import_module)
+import_module: Callable[[str, Optional[str]], ModuleType] = lru_cache(128)(importlib.import_module)
 
 class ProgramImporter:
     
