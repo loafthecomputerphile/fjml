@@ -8,6 +8,8 @@ from typing import (
     NoReturn
 )
 
+from abc import ABC, abstractmethod
+
 import flet as ft
 
 from ..parsers import utils
@@ -75,14 +77,17 @@ class TypeDict(dict):
         )
 
 
-class EventContainer(Protocol):
+class EventContainer(ABC):
     
+    @abstractmethod
     async def _page_setup(self) -> NoReturn:
         ...
     
+    @abstractmethod
     async def _imports(self) -> NoReturn:
         ...
     
+    @abstractmethod
     async def _on_close(self) -> NoReturn:
         ...
 
