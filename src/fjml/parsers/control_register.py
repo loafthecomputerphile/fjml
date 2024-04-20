@@ -1,11 +1,8 @@
 import json
 from typing import Final, IO, Any, Optional, NoReturn
-from .constants import CONTROL_REGISTRY_PATH
-from .utils import Utilities
-from ..types_errors import (
-    data_types as dt
-)
-from .utils import Utilities
+from fjml.constants import CONTROL_REGISTRY_PATH
+import fjml.data_types as dt
+from fjml.utils import Utilities
 Tools: Utilities = Utilities()
 
 

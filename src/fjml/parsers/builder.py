@@ -1,8 +1,8 @@
 import json
 import asyncio
-from functools import partial
+from functools import partial, lru_cache
 from types import MethodType
-from io import TextIOWrapper
+import io
 import traceback
 import inspect
 import copy
@@ -18,11 +18,11 @@ from typing import (
 
 import nest_asyncio
 import flet as ft
-from functools import lru_cache
-from ..types_errors import error_types as errors
-from ..types_errors import data_types as dt
-from .utils import Utilities
-from .constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
+
+import fjml.error_types as errors
+import fjml.data_types as dt
+from fjml.utils import Utilities
+from fjml.constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
 
 nest_asyncio.apply()
 
@@ -271,7 +271,7 @@ class Build:
     
     @property
     def control_registry(self) -> dt.ControlRegistryJsonScheme:
-        registry: TextIOWrapper
+        registry: io.TextIOWrapper
         
         with open(CONTROL_REGISTRY_PATH, 'r') as registry:
             return json.load(registry)

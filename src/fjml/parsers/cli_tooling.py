@@ -8,7 +8,7 @@ try:
 except:
     from typing_extensions import NoReturn
 
-from .constants import (
+from fjml.constants import (
     USER_INTEFACE_FILE_TEXT, 
     IMPORT_FILE_TEXT, 
     FUNCTION_FILE_TEXT, 

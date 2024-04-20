@@ -11,15 +11,16 @@ from typing import (
 )
 
 import flet as ft
-from .builder import Build
-from .constants import CONTROL_REGISTRY_PATH
-from ..constant_controls import IMPORTS
-from ..types_errors import (
-    error_types as errors,
-    data_types as dt
+
+from fjml import (
+    Build,
+    CONSTANT_CONTROLS,
+    generate_dict
 )
-from .control_register import generate_dict
-from .utils import Utilities, import_module
+from fjml.constants import CONTROL_REGISTRY_PATH
+import fjml.data_types as dt
+import fjml.error_types as errors
+from fjml.utils import Utilities, import_module
 
 Tools: Utilities = Utilities()
 
@@ -38,7 +39,7 @@ class Compiler:
     
     def __init__(
         self, program_name: str, code_input: dict[str, Any], 
-        custom_controls: list[dt.ControlRegistryDictPreview] = [], imports_path: str = ""
+        custom_controls: list[dt.ControlJsonScheme] = [], imports_path: str = ""
     ) -> NoReturn:
         """
         __init__ _summary_
@@ -73,7 +74,6 @@ class Compiler:
         
         if data.get("Controls", None) == None:
             raise errors.InvalidMarkupFormatError(file_name, "Controls")
-        
         keys = list(data.keys())
         
         try:
@@ -82,7 +82,6 @@ class Compiler:
             pass
         
         if len(keys) == 0: return
-        
         raise errors.InvalidMarkupContainerError(file_name, keys[0])
     
     def validate_main_file(self) -> NoReturn:
@@ -96,10 +95,9 @@ class Compiler:
             if key not in VALID_KEYS:
                 raise errors.InvalidMarkupContainerError("ui.json", key)
     
-    def add_constant_controls(self, custom_controls: list[dt.ControlRegistryDictPreview]) -> list[dt.ControlRegistryDictPreview]:
+    def add_constant_controls(self, custom_controls: list[dt.ControlJsonScheme]) -> list[dt.ControlRegistryDictPreview]:
         name: str
-        
-        for name in IMPORTS:
+        for name in CONSTANT_CONTROLS:
             custom_controls.append({
                 "name":name,
                 "source":"fjml.src.fjml.constant_controls",
@@ -179,7 +177,7 @@ class Compiler:
                 self.update_used_controls(file["Controls"])
                 jsondata.append(file["Controls"])
                 continue
-            raise ImportError(f"File at path, \"{self.imports_path}\{source}.json\" doesnt exist")
+            raise FileNotFoundError(f"File at path, \"{self.imports_path}\{source}.json\" does not exist")
         
         self.__load_controls()
         if not jsondata:
@@ -190,7 +188,7 @@ class Compiler:
                 self.__parse_controls(data)
             )
     
-    def update_used_controls(self, data: Union[list[dict[str, Any]], dict[str, Any]]) -> NoReturn:
+    def update_used_controls(self, data: Union[list[dt.JsonDict], dt.JsonDict]) -> NoReturn:
         self.used_controls.update(
             Tools.find_values(
                 data, "control_type"
