@@ -1,0 +1,106 @@
+{
+    "Controls": [
+        {
+            "var_name": "constants_name",
+            "control_type":"TextField",
+            "settings":{
+                "label":"Constant Name",
+                "unpack":{"ref":"textfield_params"}
+            }
+        },
+        {
+            "var_name": "constants_value",
+            "control_type":"TextField",
+            "settings":{
+                "label":"Constant",
+                "unpack":{"ref":"textfield_params"}
+            }
+        },
+        {
+            "var_name": "constants_submit_btn",
+            "control_type":"FilledButton",
+            "settings":{
+                "style":{"ref":"submit_btn_style"},
+                "text":"Submit",
+                "height":40,
+                "expand":1,
+                "on_click":{"func":"submit_entry"}
+            }
+        },
+        {
+            "var_name": "constants_entry",
+            "control_type":"Container",
+            "settings":{
+                "content":{
+                    "control_type":"Row",
+                    "settings":{
+                        "controls":[
+                            {"ref":"constants_name"},
+                            {"ref":"constants_value"},
+                            {"ref":"constants_submit_btn"}
+                        ],
+                        "vertical_alignment":"center",
+                        "alignment":"center"
+                    }
+                },
+                "unpack":{"ref":"container_ui_constants_1"}
+            }
+        },
+        {
+            "var_name": "constants_view",
+            "control_type":"Container",
+            "settings":{
+                "content":{
+                    "control_type":"Column",
+                    "settings":{
+                        "controls":[],
+                        "scroll":"always",
+                        "horizontal_alignment":"center",
+                        "alignment":"start"
+                    }
+                },
+                "bgcolor":"bluegrey50",
+                "border_radius":10,
+                "expand":true,
+                "padding":{"ref":"padding_constant_1"},
+                "margin":{
+                    "control_type":"margin_symmetric",
+                    "settings":{
+                        "horizontal":20,
+                        "vertical":2
+                    }
+                },
+                "alignment":{"control_type": "align_top_center"}
+            }
+        },
+        {
+            "var_name":"constants_container",
+            "control_type":"Card",
+            "settings":{
+                "content":{
+                    "control_type":"Container",
+                    "settings":{
+                        "content":{
+                            "control_type":"Column",
+                            "settings":{
+                                "controls":[
+                                    {"ref":"constants_entry"},
+                                    {"ref":"constants_view"}
+                                ],
+                                "spacing":6,
+                                "horizontal_alignment":"center",
+                                "alignment":"center"
+                            }
+                        },
+                        "padding":{"ref":"padding_constant_2"},
+                        "expand":true
+                        
+                    }
+                },
+                "col":{"xs":12, "sm":12,"xl":6},
+                "color":"grey100", 
+                "surface_tint_color":"grey100"
+            }
+        }
+    ]
+}

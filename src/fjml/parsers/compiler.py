@@ -20,7 +20,7 @@ from fjml import (
 from fjml.constants import CONTROL_REGISTRY_PATH
 import fjml.data_types as dt
 import fjml.error_types as errors
-from fjml.utils import Utilities, import_module
+from fjml.utils import Utilities, import_module, RegistryOperations
 
 Tools: Utilities = Utilities()
 
@@ -138,8 +138,7 @@ class Compiler:
         registry: io.TextIOWrapper
         
         if not self.controls_registry:
-            with open(CONTROL_REGISTRY_PATH, 'r') as registry:
-                self.controls_registry = json.load(registry)
+            self.controls_registry = RegistryOperations.load_file()
         
         self.control_loader(self.controls_registry)
         
