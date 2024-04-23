@@ -58,7 +58,7 @@ class Compiler:
         self.custom_controls_added: bool = False
         self.imports_path: str = imports_path
         self.program_name: str = program_name
-        self.controls_registry: dt.ControlRegistryJsonScheme = None
+        self.controls_registry: list[dt.ControlJsonScheme] = None
         self.code: dt.JsonDict = code_input
         self.routes: set[str] = set()
         self.methods: dt.EventContainer
@@ -107,22 +107,31 @@ class Compiler:
         
         return custom_controls
     
-    def control_loader(self, control_iterator: dt.ControlRegistryJsonScheme) -> NoReturn:
+    def control_loader(self, control_scheme: dt.ControlRegistryJsonScheme) -> NoReturn:
         name: str
         control: dt.ControlJsonScheme
-        controls_keys: set[str] = set(self.controls.keys())
+        control_keys: set[str] = set(self.controls.keys())
         
-        for control in control_iterator["ControlTypes"]:
-            name = control["name"]
-            if name in self.used_controls and name not in controls_keys:
+        for name in self.used_controls:
+            if name in control_keys: 
+                continue
+            if name in control_scheme["Controls"]:
+                control = control_scheme["ControlTypes"][
+                    control_scheme["Controls"].index(name)
+                ]
                 self.controls[name] = getattr(
                     import_module(control["source"], None),
                     control["attr"]
                 )
                 
-                controls_keys.add(name)
+                control_keys.add(name)
                 self.control_awaitable[name] = control["awaitable"]
                 self.control_settings[name] = control["valid_settings"]
+                continue
+            
+            raise ImportError(f"Control named, \"{name}\", is not registered")
+        
+        
     
     def __load_controls(self) -> NoReturn:
         controls_registry: dt.ControlRegistryJsonScheme
@@ -273,6 +282,7 @@ class Compiler:
             build.add_methods(methods)
         
         build.run_setup()
+        import_module.clear_cache()
         return build
 
 

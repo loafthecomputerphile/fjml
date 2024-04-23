@@ -3,6 +3,7 @@ from typing import Final, Any, Optional
 import os
 import shutil
 import json
+import inspect
 try:
     from typing import NoReturn
 except:
@@ -15,7 +16,53 @@ from fjml.constants import (
     ARCHIVE_FORMAT, 
     OPERATION_ARGS
 )
+from fjml import control_register
+from fjml.registry import other_controls_registry
+import fjml.data_types as dt
 
+def update_register() -> NoReturn:
+    populous: list[dt.ControlJsonScheme] = other_controls_registry.other
+    for name, obj in inspect.getmembers(ft):
+        if inspect.isclass(obj):
+            populous.append(
+                dt.ControlJsonScheme(
+                    name=name,
+                    source=obj,
+                    attr=name,
+                    is_awaitable=False
+                )
+            )
+
+    for name, obj in inspect.getmembers(ft.canvas):
+        if inspect.isclass(obj):
+            populous.append(
+                dt.ControlJsonScheme(
+                    name=f"canvas.{name}",
+                    source=obj,
+                    attr=name,
+                    is_awaitable=False
+                )
+            )
+
+    populous.extend([
+        dt.ControlJsonScheme(
+            name="MatplotlibChart",
+            source="flet.matplotlib_chart",
+            attr="MatplotlibChart",
+            is_awaitable=False
+        ),
+        dt.ControlJsonScheme(
+            name="PlotlyChart",
+            source="flet.plotly_chart",
+            attr="PlotlyChart",
+            is_awaitable=False
+        )
+    ])
+    
+    control_register.generate_dict([
+        dt.ControlRegistryModel(**content) 
+        for content in populous
+    ])
 
 def make_python_file(path: str, filename: str, code: str) -> NoReturn:
     file_path: str = os.path.join(path, filename)
@@ -99,7 +146,6 @@ def main() -> NoReturn:
     parser.add_argument('operation', type=str, help='Path where the project will be created.', choices=OPERATION_ARGS)
     parser.add_argument('--path', type=str, help='Path where the project will be created.', default=current_directory)
     parser.add_argument('--name', type=str, help='Name of the project.', default="project")
-    parser.add_argument('--unpack_dir', type=str, help='Name of the project.', default=current_directory)
 
     args: Namespace = parser.parse_args()
     packer: Packer = Packer(parser, args.path, args.name)
@@ -107,9 +153,7 @@ def main() -> NoReturn:
     if args.operation == OPERATION_ARGS[0]:
         generate_project(args.path, args.name)
     elif args.operation == OPERATION_ARGS[1]:
-        packer.pack()
-    elif args.operation == OPERATION_ARGS[2]:
-        packer.unpack(args.unpack_dir)
+        update_register()
 
 
 if __name__ == "__main__":

@@ -1,17 +1,17 @@
 import json
-from typing import Final, IO, Any, Optional, NoReturn
+from copy import deepcopy
+import io
+from dataclasses import dataclass
+from typing import Final, Any, Optional, NoReturn
 from fjml.constants import CONTROL_REGISTRY_PATH
 import fjml.data_types as dt
-from fjml.utils import Utilities
-Tools: Utilities = Utilities()
+from fjml import utils
+Tools: utils.Utilities = utils.Utilities()
 
 
 def delete_control(name: str) -> NoReturn:
     controls: list[str]
-    controls_registry: dt.ControlRegistryJsonScheme
-    
-    with open(CONTROL_REGISTRY_PATH, 'r') as registry:
-        controls_registry = json.load(registry)
+    controls_registry: dt.ControlRegistryJsonScheme = utils.RegistryOperations.load_file()
     
     controls = controls_registry["Controls"]
     control_types = controls_registry["ControlTypes"]
@@ -27,14 +27,35 @@ def delete_control(name: str) -> NoReturn:
     controls_registry["ControlTypes"] = control_types
     controls_registry["Controls"] = controls
     
-    with open(CONTROL_REGISTRY_PATH, 'w') as registry:
-        json.dump(controls_registry, registry, indent=2)
-    
+    utils.RegistryOperations.save_file(controls_registry)
+
+
+@dataclass
+class CleanFuncParams:
+    registry_dict: dt.ControlRegistryJsonScheme
+    controls: list[str]
+    control_types: list[dt.ControlJsonScheme]
+    indexes: list[int]
+
+
+def clean_results(data: CleanFuncParams) -> dt.ControlRegistryJsonScheme:
+    if data.indexes:
+        data.registry_dict["ControlTypes"] = [
+            v for i, v in enumerate(data.control_types) if i not in data.indexes
+        ]
+        data.registry_dict["Controls"] = [
+            v for i, v in enumerate(data.controls) if i not in data.indexes
+        ]
+    else:
+        data.registry_dict["ControlTypes"] = data.control_types
+        data.registry_dict["Controls"] = data.controls
+    return data.result
 
 def generate_dict(control_registry_models: list[dt.ControlRegistryModel], return_dict: bool = False) -> Optional[dt.ControlRegistryJsonScheme]:
-    registry: IO[Any]
+    registry: io.TextIOWrapper
     controls_registry: dt.ControlRegistryJsonScheme
     models: dt.ControlRegistryModel
+    control_types: list[dt.ControlJsonScheme]
     name: str
     idx: int
     model_dict: dict[str, Any]
@@ -45,14 +66,13 @@ def generate_dict(control_registry_models: list[dt.ControlRegistryModel], return
     }
     
     if not return_dict:
-        with open(CONTROL_REGISTRY_PATH, 'r') as registry:
-            controls_registry = json.load(registry) 
+        controls_registry = utils.RegistryOperations.load_file()
         
-        controls = controls_registry["Controls"]
-        control_types = controls_registry["ControlTypes"]
+        controls = deepcopy(controls_registry["Controls"])
+        control_types = deepcopy(controls_registry["ControlTypes"])
     else:
-        controls = result["Controls"]
-        control_types = result["ControlTypes"]
+        controls = deepcopy(result["Controls"])
+        control_types = deepcopy(result["ControlTypes"])
     
     for models in control_registry_models:
         
@@ -60,7 +80,7 @@ def generate_dict(control_registry_models: list[dt.ControlRegistryModel], return
         model_dict = models.return_dict
         
         if name in controls:
-            if len(control_types) < 1:
+            if len(control_types) == 0:
                 continue
             
             idx = controls.index(name)
@@ -71,33 +91,30 @@ def generate_dict(control_registry_models: list[dt.ControlRegistryModel], return
             continue
         
         controls.append(name)
-        control_types.append(
-            model_dict
-        )
+        control_types.append(model_dict)
     
-    indexes = []
-        
-    for i, types in enumerate(control_types):
-        if types["name"] not in controls:
-            indexes.append(i)
+    indexes = [i for i, types in enumerate(control_types) if types["name"] not in controls]
     
     if not return_dict:
-        if indexes:
-            controls_registry["ControlTypes"] = [v for i, v in enumerate(control_types) if i not in indexes]
-            controls_registry["Controls"] = [v for i, v in enumerate(controls) if i not in indexes]
-        else:
-            controls_registry["ControlTypes"] = control_types
-            controls_registry["Controls"] = controls
+        controls_registry = clean_results(
+            CleanFuncParams(
+                registry_dict=controls_registry,
+                controls=controls_registry["Controls"],
+                control_types=controls_registry["ControlTypes"],
+                indexes=indexes
+            )
+        )
         
-        with open(CONTROL_REGISTRY_PATH, 'w') as registry:
-            json.dump(controls_registry, registry, indent=2)
-        return
+        return utils.RegistryOperations.save_file(controls_registry)
     
-    if indexes:
-        result["ControlTypes"] = [v for i, v in enumerate(control_types) if i not in indexes]
-        result["Controls"] = [v for i, v in enumerate(controls) if i not in indexes]
-    else:
-        result["ControlTypes"] = control_types
-        result["Controls"] = controls
+    
+    return clean_results(
+        CleanFuncParams(
+            registry_dict=result,
+            controls=controls,
+            control_types=control_types,
+            indexes=indexes
+        )
+    )
         
     return result

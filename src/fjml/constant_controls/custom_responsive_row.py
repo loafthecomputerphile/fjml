@@ -58,7 +58,7 @@ def return_new_width(parent_width: float, column_const: float, assignments: Opti
     sizes.update(assignments)
     assignments = fill_forward(valid_size_filter(sizes), column_const)
     
-    return (((parent_width - spacing) * (assignments[assign_size(parent_width)] / column_const)) - spacing*2)
+    return (((parent_width - spacing) * (assignments[assign_size(int(parent_width))] / column_const)) - spacing*2)
 
 
 class CustomResponsiveRow(SizeAwareControl):

@@ -15,8 +15,11 @@ import inspect
 import re
 from dataclasses import dataclass
 from datetime import datetime
+import io
+import json
 
-from fjml.constants import ARCHIVE_FORMAT
+from fjml.constants import ARCHIVE_FORMAT, CONTROL_REGISTRY_PATH
+from fjml.error_types import RegistryFileNotFoundError
 
 import_module: Callable[[str, Optional[str]], ModuleType] = lru_cache(128)(importlib.import_module)
 
@@ -221,3 +224,21 @@ class Validator:
             return True
         except ValueError:
             return False
+
+class RegistryOperations:
+    
+    path: str = CONTROL_REGISTRY_PATH
+
+    def load_file(self) -> dt.ControlRegistryJsonScheme:
+        registry: io.TextIOWrapper
+        with open(self.path, 'r') as registry:
+            return json.load(registry)
+        raise RegistryFileNotFoundError()
+
+    def save_file(self, file_data: dt.JsonDict, dump_kargs: dict[str, Any] = {}) -> NoReturn:
+        registry: io.TextIOWrapper
+        if not dump_kwargs.get("indent", None):
+            dump_kwargs["indent"] = 2
+        with open(self.path, 'w') as registry:
+            return json.dump(file_data, registry, **dump_kwargs)
+        raise RegistryFileNotFoundError()

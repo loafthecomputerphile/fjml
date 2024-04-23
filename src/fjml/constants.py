@@ -1,13 +1,11 @@
 from typing import Final, Any
-import os.path as Path
+import pathlib as Path
 
-module_dir: str = Path.dirname(
-    Path.dirname(__file__)
-)
+module_dir: str = Path.PurePath(__file__).parent
 
 ARCHIVE_FORMAT: Final[str] = "zip"
-OPERATION_ARGS: Final[list[str]] = ["make"]
-CONTROL_REGISTRY_PATH: Final[str] = os.path.join(module_dir,"registry\\control_registry.json")
+OPERATION_ARGS: Final[list[str]] = ["make", "register"]
+CONTROL_REGISTRY_PATH: Final[str] = str(Path.PurePath(module_dir,"registry\\control_registry.json"))
 RANGE_PARAM_LENGTH: Final[set[int]] = {1,2,3}
 
 FUNCTION_FILE_TEXT: Final[str] = """import flet as ft
