@@ -12,15 +12,14 @@ from typing import (
 
 import flet as ft
 
-from fjml import (
-    Build,
-    CONSTANT_CONTROLS,
-    generate_dict
-)
-from fjml.constants import CONTROL_REGISTRY_PATH
-import fjml.data_types as dt
-import fjml.error_types as errors
-from fjml.utils import Utilities, import_module, RegistryOperations
+
+from ..constant_controls import CONSTANT_CONTROLS
+from .builder import Build
+from .control_register import generate_dict, join_registry
+from ..constants import CONTROL_REGISTRY_PATH
+from .. import data_types as dt
+from .. import error_types as errors
+from ..utils import Utilities, import_module, RegistryOperations
 
 Tools: Utilities = Utilities()
 
@@ -34,7 +33,7 @@ class Compiler:
         "control_awaitable", "program_name", "program", 
         "used_controls", "routes", "custom_controls",
         "control_bundles", "methods", "imports_path", "controls_registry",
-        "custom_controls_added"
+        "are_registries_joined"
     )
     
     def __init__(
@@ -55,7 +54,8 @@ class Compiler:
                 [dt.ControlRegistryModel(**control) for control in custom_controls],
                 True
             )
-        self.custom_controls_added: bool = False
+            print(self.custom_controls)
+        self.are_registries_joined: bool = False
         self.imports_path: str = imports_path
         self.program_name: str = program_name
         self.controls_registry: list[dt.ControlJsonScheme] = None
@@ -100,7 +100,7 @@ class Compiler:
         for name in CONSTANT_CONTROLS:
             custom_controls.append({
                 "name":name,
-                "source":"fjml.src.fjml.constant_controls",
+                "source":"src.fjml.constant_controls",
                 "attr":name,
                 "is_awaitable":False
             })
@@ -119,6 +119,7 @@ class Compiler:
                 control = control_scheme["ControlTypes"][
                     control_scheme["Controls"].index(name)
                 ]
+                if control["source"] == "LangSpec":continue
                 self.controls[name] = getattr(
                     import_module(control["source"], None),
                     control["attr"]
@@ -140,13 +141,14 @@ class Compiler:
         if not self.controls_registry:
             self.controls_registry = RegistryOperations.load_file()
         
+        if self.custom_controls and not self.are_registries_joined:
+            self.controls_registry = join_registry(self.controls_registry, self.custom_controls)
+            self.are_registries_joined = True
+            
         self.control_loader(self.controls_registry)
-        
-        if self.custom_controls and not self.custom_controls_added:
-            self.control_loader(self.custom_controls)
-            self.custom_controls_added = True
     
     def __load_program(self) -> NoReturn:
+        self.__load_controls()
         self.update_used_controls(self.code)
         self.__parse_imports()
     
@@ -281,7 +283,6 @@ class Compiler:
             build.add_methods(methods)
         
         build.run_setup()
-        import_module.clear_cache()
         return build
 
 

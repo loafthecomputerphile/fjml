@@ -3,9 +3,9 @@ from copy import deepcopy
 import io
 from dataclasses import dataclass
 from typing import Final, Any, Optional, NoReturn
-from fjml.constants import CONTROL_REGISTRY_PATH
-import fjml.data_types as dt
-from fjml import utils
+from ..constants import CONTROL_REGISTRY_PATH
+from .. import data_types as dt
+from .. import utils
 Tools: utils.Utilities = utils.Utilities()
 
 
@@ -29,6 +29,10 @@ def delete_control(name: str) -> NoReturn:
     
     utils.RegistryOperations.save_file(controls_registry)
 
+def join_registry(reg1: dt.ControlRegistryJsonScheme, reg2: dt.ControlRegistryJsonScheme ) -> dt.ControlRegistryJsonScheme:
+    for key in ["Controls", "ControlTypes"]:
+        reg1[key].extend(reg2[key])
+    return reg1
 
 @dataclass
 class CleanFuncParams:
@@ -49,7 +53,7 @@ def clean_results(data: CleanFuncParams) -> dt.ControlRegistryJsonScheme:
     else:
         data.registry_dict["ControlTypes"] = data.control_types
         data.registry_dict["Controls"] = data.controls
-    return data.result
+    return data.registry_dict
 
 def generate_dict(control_registry_models: list[dt.ControlRegistryModel], return_dict: bool = False) -> Optional[dt.ControlRegistryJsonScheme]:
     registry: io.TextIOWrapper

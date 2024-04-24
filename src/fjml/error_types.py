@@ -1,5 +1,5 @@
 from typing import Literal, NoReturn
-from fjml.constants import CONTROL_REGISTRY_PATH
+from .constants import CONTROL_REGISTRY_PATH
 
 class ConditionalError:
     

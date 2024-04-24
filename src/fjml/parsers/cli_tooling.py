@@ -9,16 +9,16 @@ try:
 except:
     from typing_extensions import NoReturn
 
-from fjml.constants import (
+from ..constants import (
     USER_INTEFACE_FILE_TEXT, 
     IMPORT_FILE_TEXT, 
     FUNCTION_FILE_TEXT, 
     ARCHIVE_FORMAT, 
     OPERATION_ARGS
 )
-from fjml import control_register
-from fjml.registry import other_controls_registry
-import fjml.data_types as dt
+from . import control_register
+from ..registry import other_controls_registry
+from .. import data_types as dt
 
 def update_register() -> NoReturn:
     populous: list[dt.ControlJsonScheme] = other_controls_registry.other

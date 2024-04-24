@@ -19,10 +19,10 @@ from typing import (
 import nest_asyncio
 import flet as ft
 
-import fjml.error_types as errors
-import fjml.data_types as dt
-from fjml.utils import Utilities, RegistryOperations
-from fjml.constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
+from .. import error_types as errors
+from .. import data_types as dt
+from ..utils import Utilities, RegistryOperations
+from ..constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
 
 nest_asyncio.apply()
 

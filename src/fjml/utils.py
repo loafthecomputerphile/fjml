@@ -5,7 +5,9 @@ from typing import (
     Union,
     Iterator,
     Final,
-    NoReturn
+    TypedDict,
+    NoReturn,
+    TypeAlias
 )
 from types import MethodType, ModuleType
 from functools import lru_cache
@@ -18,8 +20,26 @@ from datetime import datetime
 import io
 import json
 
-from fjml.constants import ARCHIVE_FORMAT, CONTROL_REGISTRY_PATH
-from fjml.error_types import RegistryFileNotFoundError
+from .constants import ARCHIVE_FORMAT, CONTROL_REGISTRY_PATH
+from .error_types import RegistryFileNotFoundError
+
+
+class ControlJsonScheme(TypedDict):
+    name: str
+    source: str
+    attr: str
+    GET: list
+    POST: list
+    CALL: list
+    awaitable: bool
+    valid_settings: list[str]
+
+
+class ControlRegistryJsonScheme(TypedDict):
+    Controls: list[str]
+    ControlTypes: list[ControlJsonScheme]
+
+JsonDict: TypeAlias = dict[str, Any]
 
 import_module: Callable[[str, Optional[str]], ModuleType] = lru_cache(128)(importlib.import_module)
 
@@ -229,13 +249,15 @@ class RegistryOperations:
     
     path: str = CONTROL_REGISTRY_PATH
 
-    def load_file(self) -> dt.ControlRegistryJsonScheme:
+    @classmethod
+    def load_file(self) -> ControlRegistryJsonScheme:
         registry: io.TextIOWrapper
         with open(self.path, 'r') as registry:
             return json.load(registry)
         raise RegistryFileNotFoundError()
 
-    def save_file(self, file_data: dt.JsonDict, dump_kargs: dict[str, Any] = {}) -> NoReturn:
+    @classmethod
+    def save_file(self, file_data: JsonDict, dump_kargs: dict[str, Any] = {}) -> NoReturn:
         registry: io.TextIOWrapper
         if not dump_kwargs.get("indent", None):
             dump_kwargs["indent"] = 2

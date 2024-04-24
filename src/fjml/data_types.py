@@ -12,9 +12,9 @@ from typing import (
 
 import flet as ft
 
-from fjml.utils import Utilities, import_module
+from . import utils
 
-Tools: Utilities = Utilities()
+Tools: utils.Utilities = utils.Utilities()
 
 __all__ = [
     "JsonDict", "ControlSettings", "ControlMap", 
@@ -280,7 +280,7 @@ class ControlRegistryModel:
         if not callable(self.source):
             self.object_args: list[str] = Tools.get_object_args(
                 getattr(
-                    import_module(self.source, None),
+                    utils.import_module(self.source, None),
                     self.attr
                 )
             )

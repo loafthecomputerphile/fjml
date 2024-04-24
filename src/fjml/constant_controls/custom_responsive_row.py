@@ -65,8 +65,8 @@ class CustomResponsiveRow(SizeAwareControl):
     
     def __init__(
         self, controls: list[Control] = [], columns: int = 12, spacing: int = 10, run_spacing: int = 10, 
-        scroll: ScrollMode = ScrollMode.ALWAYS, alignment: MainAxisAlignment = MainAxisAlignment.NONE, 
-        vertical_alignment: CrossAxisAlignment = CrossAxisAlignment.NONE, max_height: int = -1,
+        scroll: ScrollMode = ScrollMode.ALWAYS, alignment: MainAxisAlignment = MainAxisAlignment.START, 
+        vertical_alignment: CrossAxisAlignment = CrossAxisAlignment.START, max_height: int = -1,
         min_height: int = -1, **kwargs
     ) -> NoReturn:
         super().__init__(**kwargs)

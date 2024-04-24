@@ -1,40 +1,20 @@
-from types import FunctionType, CodeType
+from types import FunctionType
 from math import ceil
 import asyncio
-import inspect
 from dataclasses import dataclass
-import functools
 from typing import (
     Union, 
     Any, 
-    Optional, 
-    Type, 
-    TypedDict,
+    Optional,
     Callable,
     NoReturn
 )
 
 import nest_asyncio
-from flet import (
-    Page, margin, 
-    border, BorderSide, 
-    border_radius, Ref,
-    Container, Text, 
-    TextField, Column,
-    TextStyle, Divider,
-    ControlEvent, KeyboardEvent,
-    UserControl, Ref,
-    padding, MaterialState,
-    CrossAxisAlignment, Switch,
-    Divider, Dropdown,
-    alignment, Control,
-    dropdown
-)
+import flet as ft
 
-from modules import (
-    TextAutoCompletion, 
-    TypeChecker, 
-    ShelveMemoizer,
+from ..modules import (
+    TextAutoCompletion,
     event_join
 )
 
@@ -98,7 +78,7 @@ def partial(func: Callable, /, *args, **keywords) -> Callable:
     newfunc.keywords = keywords
     return newfunc
 
-class CustomDropdown(Container):
+class CustomDropdown(ft.Container):
     
     GET: tuple[str, ...] = (
         "value"
@@ -113,13 +93,13 @@ class CustomDropdown(Container):
     )
     
     def __init__(
-        self, width: OptionalNum = None, ref: Optional[Ref] = None, options: Union[list[str], list] = [],
+        self, width: OptionalNum = None, ref: Optional[ft.Ref] = None, options: Union[list[str], list] = [],
         label_text: OptionalStr = None, label_color: OptionalStr = None, label_weight: OptionalStr = None,
         expand: OptionalBoolNum = None, text_size: OptionalNum = None, 
         on_change: OptionalFunc = None, on_submit: OptionalFunc = None, on_focus: OptionalFunc = None, 
         on_blur: OptionalFunc = None
     ) -> NoReturn:
-        super().__init__(ref=ref, alignment=alignment.center)
+        super().__init__(ref=ref, alignment=ft.alignment.center)
         
         self.options: list[str] = options
         self.expand: OptionalBoolNum = expand
@@ -133,38 +113,38 @@ class CustomDropdown(Container):
         if label_weight:
             self.label_color: OptionalStr = label_weight
         
-        self.text_container: Container = Container(
-            Text(
+        self.text_container: ft.Container = ft.Container(
+            ft.Text(
                 value=label_text,
                 size=ceil(.7857*text_size),
                 color=self.label_color,
                 weight=self.label_weight,
             ),
-            margin=margin.only(left=8)
+            margin=ft.margin.only(left=8)
         )
         
-        self.main_dropdown: Dropdown = Dropdown(
-            text_style=TextStyle(
+        self.main_dropdown: ft.Dropdown = ft.Dropdown(
+            text_style=ft.TextStyle(
                 size=text_size,
                 color="black"
             ),
             color="black",
             focused_bgcolor="Transparent",
             options=[
-                dropdown.Option(option) for option in self.options
+                ft.dropdown.Option(option) for option in self.options
             ],
             on_change=on_change,
             on_blur=on_blur,
             on_focus=on_focus,
             dense=True,
             height=ceil(2.1428*text_size),
-            content_padding=padding.symmetric(4, 10)
+            content_padding=ft.padding.symmetric(4, 10)
         )
         
-        self.content = Column(
+        self.content = ft.Column(
             controls=[
                 self.text_container,
-                Divider(color="Transparent", height=1),
+                ft.Divider(color="Transparent", height=1),
                 self.main_dropdown
             ],
             spacing = 0
@@ -180,7 +160,7 @@ class CustomDropdown(Container):
         self.main_dropdown.update()
 
 
-class CustomSwitch(Container):
+class CustomSwitch(ft.Container):
     
     GET: tuple[str, ...] = (
         "value"
@@ -197,9 +177,9 @@ class CustomSwitch(Container):
     def __init__(
         self, label_text: OptionalStr = None, label_color: OptionalStr = None, 
         label_weight: OptionalStr = None, text_size: OptionalNum = None, 
-        is_disabled: bool = False, ref: Optional[Ref] = None,
+        is_disabled: bool = False, ref: Optional[ft.Ref] = None,
     ) -> NoReturn:
-        super().__init__(ref=ref, margin=margin.only(bottom=-8))
+        super().__init__(ref=ref, margin=ft.margin.only(bottom=-8))
         
         self.is_disabled: bool = is_disabled
         self.label_text: OptionalStr = label_text
@@ -212,30 +192,30 @@ class CustomSwitch(Container):
         if label_weight:
             self.label_weight = label_weight
         
-        self.label: Text = Text(
+        self.label: ft.Text = ft.Text(
             self.label_text, 
             color=self.label_color, 
             weight=self.label_weight, 
             size=text_size
         )
         
-        self.switch: Switch = Switch(
+        self.switch: ft.Switch = ft.Switch(
             disabled=self.is_disabled,
             track_color={
-                MaterialState.SELECTED:"primary",
-                MaterialState.DEFAULT:"bluegray50",
-                MaterialState.DISABLED:"lightgreen50"
+                ft.MaterialState.SELECTED:"primary",
+                ft.MaterialState.DEFAULT:"bluegray50",
+                ft.MaterialState.DISABLED:"lightgreen50"
             },
         )
         
-        self.content: Column = Column(
+        self.content: ft.Column = ft.Column(
             controls=[
                 self.label,
-                Divider(color="Transparent", height=1),
+                ft.Divider(color="Transparent", height=1),
                 self.switch
             ],
             spacing=0,
-            horizontal_alignment=CrossAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
     
     @property
@@ -264,7 +244,7 @@ class CustomSwitch(Container):
 class Selected:
     suggestion_index: int
 
-class CustomTextField(Container):
+class CustomTextField(ft.Container):
     
     GET: tuple[str, ...] = (
         "value"
@@ -279,7 +259,7 @@ class CustomTextField(Container):
     )
     
     def __init__(
-        self, name: str, ref: Optional[Ref] = None, enable_suggestions: bool = False, label_text: OptionalStr = None, 
+        self, name: str, ref: Optional[ft.Ref] = None, enable_suggestions: bool = False, label_text: OptionalStr = None, 
         text_size: OptionalNum = None, dtype: str = "text", date_format: str = r"%d/%m/%Y",
         width: OptionalNum = None, expand: OptionalBoolNum = None, 
         on_change = None, on_focus = None, on_blur = None, on_submit = None,
@@ -304,45 +284,45 @@ class CustomTextField(Container):
         self.max_suggestion_index: int = -1
         self.width: OptionalNum = width
         
-        self.old_keyboard_event: Union[Callable[[KeyboardEvent], None], None] = None
+        self.old_keyboard_event: Union[Callable[[ft.KeyboardEvent], None], None] = None
         self.text_suggestion_model: Union[TextAutoCompletion, None] = None
         
-        self.suggestion_dropdown: Container = Container(
-            Column(
+        self.suggestion_dropdown: ft.Container = ft.Container(
+            ft.Column(
                 controls=[],
                 spacing=0
             ),
-            margin=margin.only(
+            margin=ft.margin.only(
                 left=5, 
                 top=-1.2
             ),
-            border_radius=border_radius.only(
+            border_radius=ft.border_radius.only(
                 bottom_left = 6, 
                 bottom_right = 6
             ),
-            border=border.all(1.5, "black"),
+            border=ft.border.all(1.5, "black"),
             visible=False,
         )
         
-        self.text: Text = Text(
+        self.text: ft.Text = ft.Text(
             label_text, 
             size=ceil(.7857*self.text_size), 
             weight="w500", 
             color="black"
         )
         
-        self.field: TextField = TextField(
+        self.field: ft.TextField = ft.TextField(
             text_size=self.text_size, border_radius=6, border_width=1.5,
-            color="black", border_color="black", text_style=TextStyle(weight="w600"),
-            cursor_height=ceil(1.5714*self.text_size), content_padding=padding.symmetric(vertical=-8, horizontal=10),
+            color="black", border_color="black", text_style=ft.TextStyle(weight="w600"),
+            cursor_height=ceil(1.5714*self.text_size), content_padding=ft.padding.symmetric(vertical=-8, horizontal=10),
             height=ceil(2.1428*self.text_size), on_change=self.on_change_, on_blur=self.on_blur_,
             on_focus=self.on_focus_
         )
         
-        self.content: Column = Column(
+        self.content: ft.Column = ft.Column(
             controls=[
-                Container(self.text, margin=margin.only(left=6)),
-                Divider(color="Transparent", height=1),
+                ft.Container(self.text, margin=ft.margin.only(left=6)),
+                ft.Divider(color="Transparent", height=1),
                 self.field,
                 self.suggestion_dropdown
             ],
@@ -401,7 +381,7 @@ class CustomTextField(Container):
         else:
             return new_func
     
-    async def on_change_(self, e: ControlEvent) -> NoReturn:
+    async def on_change_(self, e: ft.ControlEvent) -> NoReturn:
         field_value: str = e.control.value
         
         if self.is_macro(field_value):
@@ -421,7 +401,7 @@ class CustomTextField(Container):
         self.add_suggestions(suggestions)
         self.update()
     
-    def on_blur_(self, e: ControlEvent) -> NoReturn:
+    def on_blur_(self, e: ft.ControlEvent) -> NoReturn:
         
         if self.enable_suggestions:
             self.clear_suggestions()
@@ -432,19 +412,19 @@ class CustomTextField(Container):
         self.clear_suggestions(False)
         self.max_suggestion_index = -1
         for i, suggestion in enumerate(suggestions):
-            control: Container = self.make_suggestion_container(suggestion)
+            control: ft.Container = self.make_suggestion_container(suggestion)
             if i == 0:
                 control.bgcolor = "green100"
             self.append_suggestion(control)
             self.max_suggestion_index += 1
         
-        self.suggestion_box[-1].border_radius = border_radius.only(
+        self.suggestion_box[-1].border_radius = ft.border_radius.only(
             bottom_left = 4, bottom_right = 4
         )
-        self.suggestion_box[-1].margin = margin.only(.6, 0, -6, 1)
+        self.suggestion_box[-1].margin = ft.margin.only(.6, 0, -6, 1)
         self.suggestion_dropdown.visible = True
     
-    def on_focus_(self, e: ControlEvent) -> NoReturn:
+    def on_focus_(self, e: ft.ControlEvent) -> NoReturn:
         
         field_value: str = e.control.value
         
@@ -454,7 +434,7 @@ class CustomTextField(Container):
         
         self.update()
     
-    def on_keyboard_(self, e: KeyboardEvent) -> NoReturn:
+    def on_keyboard_(self, e: ft.KeyboardEvent) -> NoReturn:
         idx = self.selected.suggestion_index
         
         if not self.enable_suggestions:
@@ -495,7 +475,7 @@ class CustomTextField(Container):
         ].content.value
         
     @property
-    def suggestion_box(self) -> Container:
+    def suggestion_box(self) -> ft.Container:
         return self.suggestion_dropdown.content.controls
     
     def switch_highlighted_suggestion(self, color: str) -> NoReturn:
@@ -510,15 +490,15 @@ class CustomTextField(Container):
         if update:
             self.update()
     
-    def make_suggestion_container(self, suggestion) -> Container:
-        return Container(
-            content=Text(
+    def make_suggestion_container(self, suggestion) -> ft.Container:
+        return ft.Container(
+            content=ft.Text(
                 suggestion, size=self.text_size, weight="w600", color="black", max_lines=1, expand=1
             ),
-            padding=padding.symmetric(4, 12), width=100, margin=margin.symmetric(0, .6)
+            padding=ft.padding.symmetric(4, 12), width=100, margin=ft.margin.symmetric(0, .6)
         )
         
-    def append_suggestion(self, control: Container) -> NoReturn:
+    def append_suggestion(self, control: ft.Container) -> NoReturn:
         self.suggestion_dropdown.content.controls.append(control)
     
     def get_textfield_attr(self, attr: str) -> Any:

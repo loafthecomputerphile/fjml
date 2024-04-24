@@ -1,5 +1,3 @@
-import time
-from sys import getsizeof
 import asyncio
 from dataclasses import dataclass, field
 from typing import (
@@ -14,13 +12,12 @@ from typing import (
 )
 from copy import deepcopy
 from methodtools import lru_cache
-from functools import partial
 import pandas as pd
 import numpy as np
 import nest_asyncio
 import flet as ft
 from .theme import ThemeSettings
-from modules import (
+from ..modules import (
     BookFactory, BaseBook, 
     OpenpyxlBookModel, XlwingsBookModel, 
     UndoRedoBuffer, Info, 
@@ -33,31 +30,6 @@ OptionalNum = Union[int, float, None]
 OptionalStr = Optional[str]
 OptionalBoolNum = Union[int, float, bool, None]
 OptionalInt = Optional[int]
-
-
-async def test_sheet(page: ft.Page) -> NoReturn:
-    page.theme_mode = ThemeSettings.MODE
-    page.bgcolor = ft.colors.GREY_50
-    page.title = "Development Program"
-    page.horizontal_alignment = "center"
-    page.fonts = ThemeSettings.FONTS
-    page.theme = ThemeSettings.THEME
-     
-    page.update()
-    
-    table: SheetTable = SheetTable(
-        engine="openpyxl",
-        letters=["A", "B", "C", "D", "E", "F", "G", "H", "I"],
-        titles=["Species", "Leaf Color", "Height", "Species", "Leaf Color", "Height", "Species", "Leaf Color", "Height"],
-        start_row=2,
-        end_row=140,
-        editable_letters=[],
-        filename="test_data.xlsx",
-    )
-    
-    print(getsizeof(table))
-    
-    await page.add_async(table)
 
 
 @dataclass
@@ -324,9 +296,6 @@ class SheetTable(ft.Container):
             self.book.increment_currrent_row()
             await self.switch_row()
         return input_data
-    
-    async def refresh(self):
-        ...
     
     async def undo(self, undo_object: Optional[UndoData]) -> NoReturn:
         if not undo_object:
