@@ -15,7 +15,7 @@ import flet as ft
 
 from ..constant_controls import CONSTANT_CONTROLS
 from .builder import Build
-from .control_register import generate_dict, join_registry
+from . import control_register
 from ..constants import CONTROL_REGISTRY_PATH
 from .. import data_types as dt
 from .. import error_types as errors
@@ -24,6 +24,9 @@ from ..utils import Utilities, import_module, RegistryOperations
 Tools: Utilities = Utilities()
 
 VALID_KEYS: Final[list[str]] = ["UI", "Imports", "Controls"]
+MARKUP_SPECIFIC_CONTROLS: Final[list[str]] = [
+    "loop", "ref", "loop_idx"
+]
 
 class Compiler:
     
@@ -50,11 +53,10 @@ class Compiler:
         custom_controls = self.add_constant_controls(custom_controls)
         self.custom_controls: dt.ControlRegistryJsonScheme = {}
         if custom_controls:
-            self.custom_controls = generate_dict(
+            self.custom_controls = control_register.generate_dict(
                 [dt.ControlRegistryModel(**control) for control in custom_controls],
                 True
             )
-            print(self.custom_controls)
         self.are_registries_joined: bool = False
         self.imports_path: str = imports_path
         self.program_name: str = program_name
@@ -113,7 +115,7 @@ class Compiler:
         control_keys: set[str] = set(self.controls.keys())
         
         for name in self.used_controls:
-            if name in control_keys: 
+            if name in control_keys or name in MARKUP_SPECIFIC_CONTROLS: 
                 continue
             if name in control_scheme["Controls"]:
                 control = control_scheme["ControlTypes"][
@@ -135,14 +137,11 @@ class Compiler:
         
     
     def __load_controls(self) -> NoReturn:
-        controls_registry: dt.ControlRegistryJsonScheme
-        registry: io.TextIOWrapper
-        
         if not self.controls_registry:
             self.controls_registry = RegistryOperations.load_file()
         
         if self.custom_controls and not self.are_registries_joined:
-            self.controls_registry = join_registry(self.controls_registry, self.custom_controls)
+            self.controls_registry = control_register.join_registry(self.controls_registry, self.custom_controls)
             self.are_registries_joined = True
             
         self.control_loader(self.controls_registry)

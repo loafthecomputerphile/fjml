@@ -1,5 +1,5 @@
 from src.fjml import Build, ProgramLoader, data_types as dt
-from .programs.excel_to_word.func import Actions
+from .programs.test_compiler_graph.func import Actions
 from .controls import ThemeSettings
 #from programs.test_compiler.func import Actions
 import flet as ft
@@ -43,11 +43,11 @@ async def main(page: ft.Page):
     build: Build = ProgramLoader(
         dt.LoaderParameters(
             page=page,
-            program_name="test_compiler",
-            imports_path="tests\\programs\\excel_to_word\\extra",
+            program_name="test_compiler_graph",
+            imports_path=None,
             custom_controls=custom_data,
             methods=Actions,
-            ui_code="tests\\programs\\excel_to_word\\ui.json"
+            ui_code="tests\\programs\\test_compiler_graph\\ui.json"
         )
     )
     '''
@@ -69,7 +69,7 @@ async def main(page: ft.Page):
     
     page.on_view_pop = view_pop
     
-    page.go(page.route)
+    page.go("/")
 
 if __name__ == "__main__":
     ft.app(target=main)

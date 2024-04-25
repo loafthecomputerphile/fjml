@@ -1,8 +1,9 @@
 import flet as ft
+from src.fjml.data_types import EventContainer
 from typing import NoReturn, Any
 from ...modules import WordTemplateWriter
 
-class Actions:
+class Actions(EventContainer):
     
     async def _page_setup(self) -> NoReturn:
         self.page.overlay.extend([
