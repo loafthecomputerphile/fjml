@@ -1,19 +1,17 @@
 from typing import Final, Any
-import os.path
+import pathlib as Path
 
-module_dir: str = os.path.dirname(
-    os.path.dirname(__file__)
-)
+module_dir: str = Path.PurePath(__file__).parent
 
 ARCHIVE_FORMAT: Final[str] = "zip"
-OPERATION_ARGS: Final[list[str]] = ["make", "pack", "unpack"]
-CONTROL_REGISTRY_PATH: Final[str] = os.path.join(module_dir,"registry\\control_registry.json")
+OPERATION_ARGS: Final[list[str]] = ["make", "register"]
+CONTROL_REGISTRY_PATH: Final[str] = str(Path.PurePath(module_dir,"registry\\control_registry.json"))
 RANGE_PARAM_LENGTH: Final[set[int]] = {1,2,3}
 
-FUNCTION_FILE_TEXT: Final[str] = """
-import flet as ft
+FUNCTION_FILE_TEXT: Final[str] = """import flet as ft
+from fjml import data_types as dt
 
-class Actions:
+class Actions(dt.EventContainer):
     
     async def _importer(self):
         ...

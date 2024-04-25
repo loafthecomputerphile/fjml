@@ -5,7 +5,9 @@ from typing import (
     Union,
     Iterator,
     Final,
-    NoReturn
+    TypedDict,
+    NoReturn,
+    TypeAlias
 )
 from types import MethodType, ModuleType
 from functools import lru_cache
@@ -13,31 +15,33 @@ import importlib
 import asyncio
 import inspect
 import re
-from zipfile import ZipFile
-import shutil
-from random import randint
 from dataclasses import dataclass
 from datetime import datetime
+import io
+import json
 
-from .constants import ARCHIVE_FORMAT
+from .constants import ARCHIVE_FORMAT, CONTROL_REGISTRY_PATH
+from .error_types import RegistryFileNotFoundError
+
+
+class ControlJsonScheme(TypedDict):
+    name: str
+    source: str
+    attr: str
+    GET: list
+    POST: list
+    CALL: list
+    awaitable: bool
+    valid_settings: list[str]
+
+
+class ControlRegistryJsonScheme(TypedDict):
+    Controls: list[str]
+    ControlTypes: list[ControlJsonScheme]
+
+JsonDict: TypeAlias = dict[str, Any]
 
 import_module: Callable[[str, Optional[str]], ModuleType] = lru_cache(128)(importlib.import_module)
-
-class ProgramImporter:
-    
-    __slots__ = ("return_path")
-    
-    def __init__(self, program_name: str) -> NoReturn:
-        self.return_path: str = f"temp/open_programs/{randint(1,2000000000)}"
-        shutil.unpack_archive(
-            f"programs/{program_name}.gui", 
-            self.return_path, 
-            ARCHIVE_FORMAT
-        )
-        
-    def clear_temp(self) -> NoReturn:
-        shutil.rmtree(self.return_path, ignore_errors=False)
-
 
 class Utilities:
     
@@ -207,7 +211,7 @@ class Utilities:
     
 
 
-DTYPES: list[str] = ["date", "float", "integer", "currency", "text"]
+VALIDATOR_DTYPES: list[str] = ["date", "float", "integer", "currency", "text"]
 VALIDATOR_KWARGS: dict[str, Any] = {"dtype": "text", "currency_decimals":2, "date_format":r"%d/%m/%Y"}
 
 
@@ -218,8 +222,8 @@ class Validator:
     date_format: str = r"%d/%m/%Y"
     
     def __post_init__(self) -> NoReturn:
-        if self.dtype not in DTYPES:
-            raise TypeError(f"Validator data type must be in {DTYPES}, recieved data type {self.dtype} instead")
+        if self.dtype not in VALIDATOR_DTYPES:
+            raise TypeError(f"Validator data type must be in VALIDATOR_DTYPES, recieved data type {self.dtype} instead")
     
     def validate(self, data: str) -> bool:
         if not data: return True
@@ -240,3 +244,23 @@ class Validator:
             return True
         except ValueError:
             return False
+
+class RegistryOperations:
+    
+    path: str = CONTROL_REGISTRY_PATH
+
+    @classmethod
+    def load_file(self) -> ControlRegistryJsonScheme:
+        registry: io.TextIOWrapper
+        with open(self.path, 'r') as registry:
+            return json.load(registry)
+        raise RegistryFileNotFoundError()
+
+    @classmethod
+    def save_file(self, file_data: JsonDict, dump_kargs: dict[str, Any] = {}) -> NoReturn:
+        registry: io.TextIOWrapper
+        if not dump_kwargs.get("indent", None):
+            dump_kwargs["indent"] = 2
+        with open(self.path, 'w') as registry:
+            return json.dump(file_data, registry, **dump_kwargs)
+        raise RegistryFileNotFoundError()

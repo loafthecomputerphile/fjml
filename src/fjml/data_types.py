@@ -1,6 +1,8 @@
 from __future__ import annotations
+import io
 from dataclasses import dataclass, field
 import json
+from abc import ABC, abstractmethod
 from typing import (
     Any, TypedDict,
     Union, TypeAlias,
@@ -8,13 +10,10 @@ from typing import (
     NoReturn
 )
 
-from abc import ABC, abstractmethod
-
 import flet as ft
 
-from ..parsers import utils
+from . import utils
 
-import_module = utils.import_module
 Tools: utils.Utilities = utils.Utilities()
 
 __all__ = [
@@ -180,20 +179,11 @@ class ControlModel:
     settings: ControlSettings = field(default_factory=ControlSettings)
     valid_settings: list[str] = field(default_factory=list)
 
-'''
-@dataclass
-class UserInterfaceModel:
-    control_name: str = ""
-    control: ft.Control = field(default_factory=ft.Control)
-    settings: ControlSettings = field(default_factory=ControlSettings)
-'''
 
 @dataclass
 class UserInterfaceViews:
     route: str = ""
     settings: ControlSettings = field(default_factory=dict)
-    premade_view: ft.View = field(default=None)
-    #view: UserInterfaceModel = field(default_factory=UserInterfaceModel)
 
 
 @dataclass
@@ -203,22 +193,16 @@ class FunctionVariable:
 
 
 ParsedUserInterface: TypeAlias = dict[str, UserInterfaceViews]
-#ParsedImports: TypeAlias = dict[str, ImportModel]
 ParsedControls: TypeAlias = dict[str, ControlModel]
 
 
 @dataclass
 class CompiledModel:
     controls: ParsedControls = field(default_factory=ParsedControls)
-    #actions: ParsedActions = field(default_factory=ParsedActions)
-    #imports: ParsedImports = field(default_factory=ParsedImports)
     ui: list[UserInterfaceViews] = field(default_factory=list)
     control_awaitable: dict[str, bool] = field(default_factory=dict)
     control_map: ControlMap = field(default_factory=ControlMap)
-    #program_import: "ProgramImporter" = field(default=None)
-    #views: bool = False
     routes: list[str] = field(default_factory=list)
-    #temp_file: int = field(default=None)
     control_bundles: set[str] = field(default=set)
 
 
@@ -229,11 +213,11 @@ class LoaderParameters:
     ui_code: str
     imports_path: str
     methods: Union[EventContainer, None] = field(default=None)
-    custom_controls: list[ControlRegistryDictPreview] = field(default_factory=list)
+    custom_controls: list[ControlJsonScheme] = field(default_factory=list)
     UserBuild: Optional[Type["Build"]] = field(default=None)
     
     def __post_init__(self) -> NoReturn:
-        file: TextIOWrapper
+        file: io.TextIOWrapper
         
         if not isinstance(self.ui_code, str):
             return
@@ -247,12 +231,12 @@ class LoaderParameters:
 
 @dataclass
 class ControlBundle:
-    names: list[str] = field(default_factory=list)
-    getter: Callable = None
+    names: list[str]
+    getter: Callable
     
     def __post_init__(self) -> NoReturn:
         if not callable(getter):
-            raise ValueError("Value for attribute, getter, is not callable")
+            raise ValueError("Value for attribute, getter, in ControlBundle is not callable")
         
         self.__count: int = 0
         self.__start: int = 0
@@ -296,7 +280,7 @@ class ControlRegistryModel:
         if not callable(self.source):
             self.object_args: list[str] = Tools.get_object_args(
                 getattr(
-                    import_module(self.source, None),
+                    utils.import_module(self.source, None),
                     self.attr
                 )
             )

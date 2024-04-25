@@ -1,0 +1,117 @@
+{
+    "Imports": [
+        {"source":"ui_constants"},
+        {"source": "excel_entry_ui"},
+        {"source": "constants_entry_ui"},
+        {"source":"file_entry_ui"},
+        {"source":"sheet_view_ui"}
+    ],
+    "Controls": [
+        {
+            "var_name": "central_container",
+            "control_type": "Container",
+            "settings":{
+                "content":{
+                    "control_type":"CustomResponsiveRow",
+                    "settings":{
+                        "controls":[
+                            {"ref": "constants_container"},
+                            {"ref": "excel_data_container"}
+                        ],
+                        "vertical_alignment":"center",
+                        "alignment": "center",
+                        "expand":true
+                    }
+                },
+                "alignment": {"control_type": "alignment.center"},
+                "expand":1
+            }
+        },
+        {
+            "var_name": "enter_container",
+            "control_type": "Card",
+            "settings":{
+                "content":{
+                    "control_type": "Container",
+                    "settings":{
+                        "content":{
+                            "control_type":"Row",
+                            "settings":{
+                                "controls":[
+                                    {
+                                        "control_type":"ElevatedButton",
+                                        "settings":{
+                                            "text":"Generate Document",
+                                            "style":{"ref":"submit_btn_style_2"},
+                                            "expand":true,
+                                            "on_click":{"func":"pick_path"}
+                                        }
+                                    }
+                                ],
+                                "expand":true
+                            }
+                        },
+                        "expand":true
+                    }
+                },
+                "height":60,
+                "color":"transparent",
+                "surface_tint_color":"transparent"
+            }
+        }
+    ],
+    "UI": [
+        {
+            "route": "/",
+            "settings":{
+                "controls":[
+                    {
+                        "control_type": "Container",
+                        "settings": {
+                            "content":{
+                                "control_type":"Column",
+                                "settings":{
+                                    "controls":[
+                                        {"ref": "file_selection_container"},
+                                        {"ref":"central_container"},
+                                        {"ref":"enter_container"}
+                                    ],
+                                    "horizontal_alignment":"center",
+                                    "alignment":"start"
+                                }
+                            },
+                            "bgcolor": "white",
+                            "alignment": {"control_type": "alignment.top_center"},
+                            "expand":true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "route": "/Excel_View",
+            "settings":{
+                "controls":[
+                    {
+                        "control_type": "Container",
+                        "settings": {
+                            "content":{
+                                "control_type":"Column",
+                                "settings":{
+                                    "controls":[
+                                        {"ref": "excel_sheet_view"}
+                                    ],
+                                    "horizontal_alignment":"center",
+                                    "alignment":"start"
+                                }
+                            } ,
+                            "bgcolor": "white",
+                            "alignment": {"control_type": "alignment.center"},
+                            "expand": true
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

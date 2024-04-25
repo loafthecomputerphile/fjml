@@ -11,19 +11,22 @@ from typing import (
 )
 
 import flet as ft
+
+
+from ..constant_controls import CONSTANT_CONTROLS
 from .builder import Build
-from .constants import CONTROL_REGISTRY_PATH
-from ..constant_controls import IMPORTS
-from ..types_errors import (
-    error_types as errors,
-    data_types as dt
-)
-from .control_register import generate_dict
-from .utils import Utilities, import_module
+from . import control_register
+from ..constants import CONTROL_REGISTRY_PATH
+from .. import data_types as dt
+from .. import error_types as errors
+from ..utils import Utilities, import_module, RegistryOperations
 
 Tools: Utilities = Utilities()
 
 VALID_KEYS: Final[list[str]] = ["UI", "Imports", "Controls"]
+MARKUP_SPECIFIC_CONTROLS: Final[list[str]] = [
+    "loop", "ref", "loop_idx"
+]
 
 class Compiler:
     
@@ -33,12 +36,12 @@ class Compiler:
         "control_awaitable", "program_name", "program", 
         "used_controls", "routes", "custom_controls",
         "control_bundles", "methods", "imports_path", "controls_registry",
-        "custom_controls_added"
+        "are_registries_joined"
     )
     
     def __init__(
         self, program_name: str, code_input: dict[str, Any], 
-        custom_controls: list[dt.ControlRegistryDictPreview] = [], imports_path: str = ""
+        custom_controls: list[dt.ControlJsonScheme] = [], imports_path: str = ""
     ) -> NoReturn:
         """
         __init__ _summary_
@@ -50,14 +53,14 @@ class Compiler:
         custom_controls = self.add_constant_controls(custom_controls)
         self.custom_controls: dt.ControlRegistryJsonScheme = {}
         if custom_controls:
-            self.custom_controls = generate_dict(
+            self.custom_controls = control_register.generate_dict(
                 [dt.ControlRegistryModel(**control) for control in custom_controls],
                 True
             )
-        self.custom_controls_added: bool = False
+        self.are_registries_joined: bool = False
         self.imports_path: str = imports_path
         self.program_name: str = program_name
-        self.controls_registry: dt.ControlRegistryJsonScheme = None
+        self.controls_registry: list[dt.ControlJsonScheme] = None
         self.code: dt.JsonDict = code_input
         self.routes: set[str] = set()
         self.methods: dt.EventContainer
@@ -73,7 +76,6 @@ class Compiler:
         
         if data.get("Controls", None) == None:
             raise errors.InvalidMarkupFormatError(file_name, "Controls")
-        
         keys = list(data.keys())
         
         try:
@@ -82,7 +84,6 @@ class Compiler:
             pass
         
         if len(keys) == 0: return
-        
         raise errors.InvalidMarkupContainerError(file_name, keys[0])
     
     def validate_main_file(self) -> NoReturn:
@@ -96,51 +97,57 @@ class Compiler:
             if key not in VALID_KEYS:
                 raise errors.InvalidMarkupContainerError("ui.json", key)
     
-    def add_constant_controls(self, custom_controls: list[dt.ControlRegistryDictPreview]) -> list[dt.ControlRegistryDictPreview]:
+    def add_constant_controls(self, custom_controls: list[dt.ControlJsonScheme]) -> list[dt.ControlRegistryDictPreview]:
         name: str
-        
-        for name in IMPORTS:
+        for name in CONSTANT_CONTROLS:
             custom_controls.append({
                 "name":name,
-                "source":"fjml.src.fjml.constant_controls",
+                "source":"src.fjml.constant_controls",
                 "attr":name,
                 "is_awaitable":False
             })
         
         return custom_controls
     
-    def control_loader(self, control_iterator: dt.ControlRegistryJsonScheme) -> NoReturn:
+    def control_loader(self, control_scheme: dt.ControlRegistryJsonScheme) -> NoReturn:
         name: str
         control: dt.ControlJsonScheme
-        controls_keys: set[str] = set(self.controls.keys())
+        control_keys: set[str] = set(self.controls.keys())
         
-        for control in control_iterator["ControlTypes"]:
-            name = control["name"]
-            if name in self.used_controls and name not in controls_keys:
+        for name in self.used_controls:
+            if name in control_keys or name in MARKUP_SPECIFIC_CONTROLS: 
+                continue
+            if name in control_scheme["Controls"]:
+                control = control_scheme["ControlTypes"][
+                    control_scheme["Controls"].index(name)
+                ]
+                if control["source"] == "LangSpec":continue
                 self.controls[name] = getattr(
                     import_module(control["source"], None),
                     control["attr"]
                 )
                 
-                controls_keys.add(name)
+                control_keys.add(name)
                 self.control_awaitable[name] = control["awaitable"]
                 self.control_settings[name] = control["valid_settings"]
+                continue
+            
+            raise ImportError(f"Control named, \"{name}\", is not registered")
+        
+        
     
     def __load_controls(self) -> NoReturn:
-        controls_registry: dt.ControlRegistryJsonScheme
-        registry: io.TextIOWrapper
-        
         if not self.controls_registry:
-            with open(CONTROL_REGISTRY_PATH, 'r') as registry:
-                self.controls_registry = json.load(registry)
+            self.controls_registry = RegistryOperations.load_file()
         
+        if self.custom_controls and not self.are_registries_joined:
+            self.controls_registry = control_register.join_registry(self.controls_registry, self.custom_controls)
+            self.are_registries_joined = True
+            
         self.control_loader(self.controls_registry)
-        
-        if self.custom_controls and not self.custom_controls_added:
-            self.control_loader(self.custom_controls)
-            self.custom_controls_added = True
     
     def __load_program(self) -> NoReturn:
+        self.__load_controls()
         self.update_used_controls(self.code)
         self.__parse_imports()
     
@@ -179,7 +186,7 @@ class Compiler:
                 self.update_used_controls(file["Controls"])
                 jsondata.append(file["Controls"])
                 continue
-            raise ImportError(f"File at path, \"{self.imports_path}\{source}.json\" doesnt exist")
+            raise FileNotFoundError(f"File at path, \"{self.imports_path}\{source}.json\" does not exist")
         
         self.__load_controls()
         if not jsondata:
@@ -190,7 +197,7 @@ class Compiler:
                 self.__parse_controls(data)
             )
     
-    def update_used_controls(self, data: Union[list[dict[str, Any]], dict[str, Any]]) -> NoReturn:
+    def update_used_controls(self, data: Union[list[dt.JsonDict], dt.JsonDict]) -> NoReturn:
         self.used_controls.update(
             Tools.find_values(
                 data, "control_type"

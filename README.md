@@ -144,16 +144,16 @@ class Action(EventContainer):
     import flet as ft
     from ./path/to/actions import Actions
 
-    CUSTOM_CONTROLS = [
-        {
-            "name":"CustomButton",
-            "source":"my_controls",
-            "attr":"CustomButton",
-            "is_awaitable":False
-        }
+    CUSTOM_CONTROLS: list[dt.ControlJsonScheme] = [
+        dt.ControlJsonScheme(
+            name="CustomButton",
+            source="my_controls",
+            attr="CustomButton",
+            is_awaitable=False
+        )
     ]
 
-    async def main(page: ft.Page):
+    async def main(page: ft.Page) -> None:
         ProgramLoader(
             dt.LoaderParameters(
                 page=page,
@@ -165,9 +165,9 @@ class Action(EventContainer):
             )
         )
 
-        def view_pop(view):
+        def view_pop(view: ft.View) -> None:
             page.views.pop()
-            top_view = page.views[-1]
+            top_view: ft.View = page.views[-1]
             page.go(top_view.route)
         
         page.on_view_pop = view_pop

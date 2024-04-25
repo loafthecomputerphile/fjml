@@ -58,15 +58,15 @@ def return_new_width(parent_width: float, column_const: float, assignments: Opti
     sizes.update(assignments)
     assignments = fill_forward(valid_size_filter(sizes), column_const)
     
-    return (((parent_width - spacing) * (assignments[assign_size(parent_width)] / column_const)) - spacing*2)
+    return (((parent_width - spacing) * (assignments[assign_size(int(parent_width))] / column_const)) - spacing*2)
 
 
 class CustomResponsiveRow(SizeAwareControl):
     
     def __init__(
         self, controls: list[Control] = [], columns: int = 12, spacing: int = 10, run_spacing: int = 10, 
-        scroll: ScrollMode = ScrollMode.ALWAYS, alignment: MainAxisAlignment = MainAxisAlignment.NONE, 
-        vertical_alignment: CrossAxisAlignment = CrossAxisAlignment.NONE, max_height: int = -1,
+        scroll: ScrollMode = ScrollMode.ALWAYS, alignment: MainAxisAlignment = MainAxisAlignment.START, 
+        vertical_alignment: CrossAxisAlignment = CrossAxisAlignment.START, max_height: int = -1,
         min_height: int = -1, **kwargs
     ) -> NoReturn:
         super().__init__(**kwargs)

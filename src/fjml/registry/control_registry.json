@@ -1,5 +1,8 @@
 {
   "Controls": [
+    "ref",
+    "loop",
+    "loop_index",
     "animation.implicit",
     "Option",
     "BorderSide",
@@ -357,6 +360,36 @@
     "context"
   ],
   "ControlTypes": [
+    {
+      "name": "ref",
+      "source": "LangSpec",
+      "attr": null,
+      "GET": [],
+      "POST": [],
+      "CALL": [],
+      "awaitable": false,
+      "valid_settings": []
+    },
+    {
+      "name": "loop",
+      "source": "LangSpec",
+      "attr": null,
+      "GET": [],
+      "POST": [],
+      "CALL": [],
+      "awaitable": false,
+      "valid_settings": []
+    },
+    {
+      "name": "loop_index",
+      "source": "LangSpec",
+      "attr": null,
+      "GET": [],
+      "POST": [],
+      "CALL": [],
+      "awaitable": false,
+      "valid_settings": []
+    },
     {
       "name": "animation.implicit",
       "source": "flet_core.animation",

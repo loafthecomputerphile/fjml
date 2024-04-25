@@ -1,8 +1,8 @@
 import json
 import asyncio
-from functools import partial
+from functools import partial, lru_cache
 from types import MethodType
-from io import TextIOWrapper
+import io
 import traceback
 import inspect
 import copy
@@ -18,11 +18,11 @@ from typing import (
 
 import nest_asyncio
 import flet as ft
-from functools import lru_cache
-from ..types_errors import error_types as errors
-from ..types_errors import data_types as dt
-from .utils import Utilities
-from .constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
+
+from .. import error_types as errors
+from .. import data_types as dt
+from ..utils import Utilities, RegistryOperations
+from ..constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
 
 nest_asyncio.apply()
 
@@ -271,12 +271,7 @@ class Build:
     
     @property
     def control_registry(self) -> dt.ControlRegistryJsonScheme:
-        registry: TextIOWrapper
-        
-        with open(CONTROL_REGISTRY_PATH, 'r') as registry:
-            return json.load(registry)
-        
-        raise FileNotFoundError("registry path was not found")
+        return RegistryOperations.load_file()
     
     def add_controls(self, names: list[str]) -> NoReturn:
         """Adds flet controls to be used in the fjml markup file
@@ -535,7 +530,11 @@ class Build:
                 controls[i] = self.__get_attr(obj["ref"])
                 continue
             
-            controls[i] = self.parsed_control_maker(obj)
+            try:
+                controls[i] = self.parsed_control_maker(obj)
+            except AttributeError as e:
+                print(obj)
+                raise e
         
         data["controls"] = controls
         return data
@@ -615,7 +614,7 @@ class Build:
             list[ft.Control]: generated loops to be used inside controls
         """
         control_list: list[ft.Control] = []
-        control: ControlModel
+        control: dict
         content: str
         settings: dt.ControlSettings
         value: Any
@@ -641,30 +640,40 @@ class Build:
                 continue
             
             content = control.get("control_type", None)
-            if not content:
-                raise ValueError("loop content has to be a reference or a control type")
+            is_callable = control.get("call", None)
+            if not content and not is_callable:
+                raise ValueError("loop content has to be a reference, a control type or a function call")
             
             if content == "loop":
                 return_val.append(self.run_ui_loop(control))
                 continue
             
-            settings = control.get("settings", None)
-            
+            settings = control.get("settings", {})
+            '''
             if not settings:
                 raise KeyError("Key settings was not found for loop content")
             if not isinstance(settings, dict):
                 raise ValueError(f"settings must be of type dict. recieved type of {type(settings)} instead")
-            
-            control_list.append(
-                self.create_control(
-                    control["control_type"], 
-                    self.settings_objects_to_controls(
-                        search_and_sanitize(
+            '''
+            if not is_callable:
+                control_list.append(
+                    self.create_control(
+                        control["control_type"], 
+                        self.settings_objects_to_controls(
+                            search_and_sanitize(
+                                settings, sanatize, depth_count, self.__loop_values
+                            )
+                        )
+                    )
+                )
+            else:
+                control_list.append(
+                    self.__get_attr(is_callable)(
+                        **search_and_sanitize(
                             settings, sanatize, depth_count, self.__loop_values
                         )
                     )
                 )
-            )
             
         return control_list
     

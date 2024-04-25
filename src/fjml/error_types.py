@@ -1,4 +1,5 @@
 from typing import Literal, NoReturn
+from .constants import CONTROL_REGISTRY_PATH
 
 class ConditionalError:
     
@@ -41,6 +42,11 @@ class InvalidValueError(Exception):
     def __init__(self, control_name: str, key: str, value: str) -> NoReturn:
         super().__init__(f"Value, {value}, for key, {key}, in {control_name} is invalid.")
 
+
+class RegistryFileNotFoundError(Exception):
+    __module__: str = 'builtins'
+    def __init__(self) -> NoReturn:
+        super().__init__("Registry file is missing or misplaced")
 
 
 class InvalidKeyError(Exception):
