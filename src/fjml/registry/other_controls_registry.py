@@ -1,4 +1,4 @@
-import fjml.data_types as dt
+from .. import data_types as dt
 
 
 others: list[dt.ControlJsonScheme] = [

@@ -268,35 +268,26 @@ class ControlRegistryModel:
     source: str = ""
     attr: str = ""
     is_awaitable: bool = False,
-    get: list = field(default_factory=list)
-    post: list = field(default_factory=list)
-    call: list = field(default_factory=list)
     
     def __post_init__(self) -> NoReturn:
         
         if not (self.name and self.source and self.attr):
             raise ValueError()
         
-        if not callable(self.source):
-            self.object_args: list[str] = Tools.get_object_args(
-                getattr(
-                    utils.import_module(self.source, None),
-                    self.attr
-                )
+        self.object_args: list[str] = Tools.get_object_args(
+            getattr(
+                utils.import_module(self.source, None),
+                self.attr
             )
-        else:
-            self.object_args: list[str] = Tools.get_object_args(
-                self.source
-            )
-            self.source = self.attr = "self"
+        )
+        
+        if "self" in self.object_args:
+            self.object_args.remove("self")
         
         self.return_dict: ControlJsonScheme = {
             "name":self.name,
             "source":self.source,
             "attr":self.attr,
-            "GET":self.get,
-            "POST":self.post,
-            "CALL":self.call,
             "awaitable":self.is_awaitable,
             "valid_settings":self.object_args
         }

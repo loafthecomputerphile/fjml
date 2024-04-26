@@ -16,18 +16,19 @@ from ..constants import (
     ARCHIVE_FORMAT, 
     OPERATION_ARGS
 )
-from . import control_register
+import flet as ft
+from .control_register import  ControlRegistryOperations
 from ..registry import other_controls_registry
 from .. import data_types as dt
 
 def update_register() -> NoReturn:
-    populous: list[dt.ControlJsonScheme] = other_controls_registry.other
+    populous: list[dt.ControlJsonScheme] = other_controls_registry.others
     for name, obj in inspect.getmembers(ft):
         if inspect.isclass(obj):
             populous.append(
                 dt.ControlJsonScheme(
                     name=name,
-                    source=obj,
+                    source="flet",
                     attr=name,
                     is_awaitable=False
                 )
@@ -38,7 +39,7 @@ def update_register() -> NoReturn:
             populous.append(
                 dt.ControlJsonScheme(
                     name=f"canvas.{name}",
-                    source=obj,
+                    source="flet.canvas",
                     attr=name,
                     is_awaitable=False
                 )
@@ -59,7 +60,7 @@ def update_register() -> NoReturn:
         )
     ])
     
-    control_register.generate_dict([
+    ControlRegistryOperations.generate_dict([
         dt.ControlRegistryModel(**content) 
         for content in populous
     ])
@@ -155,6 +156,6 @@ def main() -> NoReturn:
     elif args.operation == OPERATION_ARGS[1]:
         update_register()
 
-
+'''
 if __name__ == "__main__":
-    main()
+    main()'''

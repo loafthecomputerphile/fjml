@@ -15,11 +15,11 @@ import flet as ft
 
 from ..constant_controls import CONSTANT_CONTROLS
 from .builder import Build
-from . import control_register
+from .control_register import ControlRegistryOperations
 from ..constants import CONTROL_REGISTRY_PATH
 from .. import data_types as dt
 from .. import error_types as errors
-from ..utils import Utilities, import_module, RegistryOperations
+from ..utils import Utilities, import_module, RegistryFileOperations
 
 Tools: Utilities = Utilities()
 
@@ -53,7 +53,7 @@ class Compiler:
         custom_controls = self.add_constant_controls(custom_controls)
         self.custom_controls: dt.ControlRegistryJsonScheme = {}
         if custom_controls:
-            self.custom_controls = control_register.generate_dict(
+            self.custom_controls = RegistryFileOperations.generate_dict(
                 [dt.ControlRegistryModel(**control) for control in custom_controls],
                 True
             )
@@ -138,10 +138,12 @@ class Compiler:
     
     def __load_controls(self) -> NoReturn:
         if not self.controls_registry:
-            self.controls_registry = RegistryOperations.load_file()
+            self.controls_registry = RegistryFileOperations.load_file()
         
         if self.custom_controls and not self.are_registries_joined:
-            self.controls_registry = control_register.join_registry(self.controls_registry, self.custom_controls)
+            self.controls_registry = ControlRegistryOperations.join_registry(
+                self.controls_registry, self.custom_controls
+            )
             self.are_registries_joined = True
             
         self.control_loader(self.controls_registry)

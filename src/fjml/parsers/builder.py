@@ -21,7 +21,7 @@ import flet as ft
 
 from .. import error_types as errors
 from .. import data_types as dt
-from ..utils import Utilities, RegistryOperations
+from ..utils import Utilities, RegistryFileOperations
 from ..constants import CONTROL_REGISTRY_PATH, RANGE_PARAM_LENGTH
 
 nest_asyncio.apply()
@@ -271,7 +271,7 @@ class Build:
     
     @property
     def control_registry(self) -> dt.ControlRegistryJsonScheme:
-        return RegistryOperations.load_file()
+        return RegistryFileOperations.load_file()
     
     def add_controls(self, names: list[str]) -> NoReturn:
         """Adds flet controls to be used in the fjml markup file
