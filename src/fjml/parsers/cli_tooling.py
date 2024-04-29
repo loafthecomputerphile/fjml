@@ -16,45 +16,114 @@ from ..constants import (
     ARCHIVE_FORMAT, 
     OPERATION_ARGS
 )
+from enum import Enum
+import operator as op 
 import flet as ft
+from flet.matplotlib_chart import MatplotlibChart
+from flet.plotly_chart import PlotlyChart
 from .control_register import  ControlRegistryOperations
 from ..registry import other_controls_registry
 from .. import data_types as dt
 
+def splitter(data: str, sep:str="."):
+    data = data.split(sep)
+    if len(data) < 2: return data[0]
+    return data[1]
+
+invalid_sources: list[str] = [
+    "utils", "pubsub", 
+    "connection", "protocol", 
+    "event_handler", "local_connection", 
+    "locks", "querystring",
+    "session_storage", "template_route",
+    "event", "control_event",
+    "tests"
+]
+
 def update_register() -> NoReturn:
-    populous: list[dt.ControlJsonScheme] = other_controls_registry.others
+    added_names: list[str] = []
+    populous: list[dt.ControlJsonScheme] = []
+    #other_controls_registry.others
     for name, obj in inspect.getmembers(ft):
-        if inspect.isclass(obj):
+        if inspect.isclass(obj) and name not in added_names:
+            obj_source = dt.ObjectSource(obj, "flet")
             populous.append(
                 dt.ControlJsonScheme(
                     name=name,
-                    source="flet",
+                    source=obj_source,
                     attr=name,
                     is_awaitable=False
                 )
             )
+            added_names.append(name)
+    
+    
+    for name, obj in inspect.getmembers(ft): 
+        if inspect.ismodule(obj) and name not in invalid_sources:
+            for name1, obj1 in inspect.getmembers(obj):
+                if not hasattr(obj1, "__module__"): continue
+                if (inspect.isclass(obj1) or inspect.isfunction(obj1) or type(obj1) != type) and splitter(obj1.__module__) == splitter(obj.__name__):
+                    obj_source = dt.ObjectSource(obj1, obj1.__module__)
+                    if inspect.isclass(obj1) and name1 not in added_names:
+                        populous.append(
+                            dt.ControlJsonScheme(
+                                name=name1,
+                                source=obj_source,
+                                attr=name1,
+                                is_awaitable=False
+                            )
+                        )
+                        added_names.append(name1)
+                    elif inspect.isfunction(obj1) and f"{name}.{name1}" not in added_names:
+                        populous.append(
+                            dt.ControlJsonScheme(
+                                name=f"{name}.{name1}",
+                                source=obj_source,
+                                attr=name1,
+                                is_awaitable=False
+                            )
+                        )
+                        added_names.append(f"{name}.{name1}")
+                    elif type(obj1) != type and f"{name}.{name1}" not in added_names and not callable(obj1):
+                        populous.append(
+                            dt.ControlJsonScheme(
+                                name=f"{name}.{name1}",
+                                source=obj_source,
+                                attr=name1,
+                                is_awaitable=False
+                            )
+                        )
+                        added_names.append(f"{name}.{name1}")
 
     for name, obj in inspect.getmembers(ft.canvas):
-        if inspect.isclass(obj):
+        if inspect.isclass(obj) and name not in added_names:
+            obj_source = dt.ObjectSource(obj, "flet.canvas")
             populous.append(
                 dt.ControlJsonScheme(
-                    name=f"canvas.{name}",
-                    source="flet.canvas",
+                    name=name,
+                    source=obj_source,
                     attr=name,
                     is_awaitable=False
                 )
             )
+            added_names.append(name)
 
     populous.extend([
         dt.ControlJsonScheme(
             name="MatplotlibChart",
-            source="flet.matplotlib_chart",
+            source=dt.ObjectSource(
+                MatplotlibChart, 
+                "flet.matplotlib_chart"
+            ),
             attr="MatplotlibChart",
             is_awaitable=False
         ),
         dt.ControlJsonScheme(
             name="PlotlyChart",
-            source="flet.plotly_chart",
+            source=dt.ObjectSource(
+                PlotlyChart, 
+                "flet.plotly_chart"
+            ),
             attr="PlotlyChart",
             is_awaitable=False
         )

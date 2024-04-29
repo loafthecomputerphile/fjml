@@ -13,7 +13,8 @@ from typing import (
 import flet as ft
 
 
-from ..constant_controls import CONSTANT_CONTROLS
+from .. import constant_controls
+
 from .builder import Build
 from .control_register import ControlRegistryOperations
 from ..constants import CONTROL_REGISTRY_PATH
@@ -25,7 +26,7 @@ Tools: Utilities = Utilities()
 
 VALID_KEYS: Final[list[str]] = ["UI", "Imports", "Controls"]
 MARKUP_SPECIFIC_CONTROLS: Final[list[str]] = [
-    "loop", "ref", "loop_idx"
+    "loop", "ref", "loop_index"
 ]
 
 class Compiler:
@@ -53,7 +54,7 @@ class Compiler:
         custom_controls = self.add_constant_controls(custom_controls)
         self.custom_controls: dt.ControlRegistryJsonScheme = {}
         if custom_controls:
-            self.custom_controls = RegistryFileOperations.generate_dict(
+            self.custom_controls = ControlRegistryOperations.generate_dict(
                 [dt.ControlRegistryModel(**control) for control in custom_controls],
                 True
             )
@@ -99,10 +100,13 @@ class Compiler:
     
     def add_constant_controls(self, custom_controls: list[dt.ControlJsonScheme]) -> list[dt.ControlRegistryDictPreview]:
         name: str
-        for name in CONSTANT_CONTROLS:
+        for name in constant_controls.CONSTANT_CONTROLS:
+            obj = getattr(constant_controls, name)
             custom_controls.append({
                 "name":name,
-                "source":"src.fjml.constant_controls",
+                "source":dt.ObjectSource(
+                    obj, obj.__module__
+                ),
                 "attr":name,
                 "is_awaitable":False
             })
@@ -121,7 +125,6 @@ class Compiler:
                 control = control_scheme["ControlTypes"][
                     control_scheme["Controls"].index(name)
                 ]
-                if control["source"] == "LangSpec":continue
                 self.controls[name] = getattr(
                     import_module(control["source"], None),
                     control["attr"]

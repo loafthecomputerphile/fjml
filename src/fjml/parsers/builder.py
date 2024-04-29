@@ -219,7 +219,7 @@ class Build:
         
         self.page.update()
     
-    def set_object(self, name: str, obj: Callable) -> NoReturn:
+    def set_object(self, name: str, obj: Callable[[...], Any]) -> NoReturn:
         """Adds a callable python object to the object map to be called in the fjml markup 
 
         Args:
@@ -233,7 +233,7 @@ class Build:
             (not callable(obj)),"Parameter, obj, is not callable")
         self.__object_map[name] = obj
     
-    def get_object(self, name: str) -> Callable:
+    def get_object(self, name: str) -> Callable[[...], Any]:
         """Returns a callable python object from the object map
 
         Args:

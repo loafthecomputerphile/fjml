@@ -1,53 +1,65 @@
 from src.fjml import Build, ProgramLoader, data_types as dt
-from .programs.test_compiler_graph.func import Actions
-from .controls import ThemeSettings
+from .programs.excel_to_word.func import Actions
+from . import controls
 #from programs.test_compiler.func import Actions
 import flet as ft
 
 custom_data = [
-  {
-    "name":"SheetTable",
-    "source":"tests.controls",
-    "attr":"SheetTable",
-    "is_awaitable":False
-  },
-  {
-    "name":"CustomDropdown",
-    "source":"tests.controls",
-    "attr":"CustomDropdown",
-    "is_awaitable":False
-  },
-  {
-    "name":"CustomSwitch",
-    "source":"tests.controls",
-    "attr":"CustomSwitch",
-    "is_awaitable":False
-  },
-  {
-    "name":"CustomTextField",
-    "source":"tests.controls",
-    "attr":"CustomTextField",
-    "is_awaitable":False
-  }
+    {
+        "name":"SheetTable",
+        "source":dt.ObjectSource(
+            getattr(controls, "SheetTable"),
+            "tests.controls"
+        ),
+        "attr":"SheetTable",
+        "is_awaitable":False
+    },
+    {
+        "name":"CustomDropdown",
+        "source":dt.ObjectSource(
+            getattr(controls, "CustomDropdown"),
+            "tests.controls"
+        ),
+        "attr":"CustomDropdown",
+        "is_awaitable":False
+    },
+    {
+        "name":"CustomSwitch",
+        "source":dt.ObjectSource(
+            getattr(controls, "CustomSwitch"),
+            "tests.controls"
+        ),
+        "attr":"CustomSwitch",
+        "is_awaitable":False
+    },
+    {
+        "name":"CustomTextField",
+        "source":dt.ObjectSource(
+            getattr(controls, "CustomTextField"),
+            "tests.controls"
+        ),
+        "attr":"CustomTextField",
+        "is_awaitable":False
+    }
 ]
 
 
 
 async def main(page: ft.Page):
-    page.theme_mode = ThemeSettings.MODE
+    page.theme_mode = controls.ThemeSettings.MODE
     page.bgcolor = ft.colors.GREY_50
     page.title = "Development Program"
     page.horizontal_alignment = "center"
-    page.fonts = ThemeSettings.FONTS
-    page.theme = ThemeSettings.THEME
+    page.fonts = controls.ThemeSettings.FONTS
+    page.theme = controls.ThemeSettings.THEME
     build: Build = ProgramLoader(
         dt.LoaderParameters(
             page=page,
             program_name="test_compiler_graph",
-            imports_path=None,
+            imports_path="tests\\programs\\excel_to_word\\extra",
             custom_controls=custom_data,
             methods=Actions,
-            ui_code="tests\\programs\\test_compiler_graph\\ui.json"
+            ui_code="tests\\programs\\excel_to_word\\ui.json"
         )
     )
     '''

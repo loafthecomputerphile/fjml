@@ -1,33 +1,5 @@
 {
     "Controls": [
-        "animation.implicit",
-        "Option",
-        "BorderSide",
-        "color.with_opacity",
-        "margin.symmetric",
-        "margin.all",
-        "margin.only",
-        "padding.symmetric",
-        "padding.all",
-        "padding.only",
-        "border.symmetric",
-        "border.all",
-        "border.only",
-        "border_radius.horizontal",
-        "border_radius.vertical",
-        "border_radius.all",
-        "border_radius.only",
-        "alignment.bottom_center",
-        "alignment.bottom_left",
-        "alignment.bottom_right",
-        "alignment.center",
-        "alignment.center_right",
-        "alignment.center_left",
-        "alignment.top_center",
-        "alignment.top_left",
-        "alignment.top_right",
-        "MatplotlibChart",
-        "PlotlyChart",
         "AdaptiveControl",
         "AlertDialog",
         "Alignment",
@@ -59,6 +31,7 @@
         "BlurTileMode",
         "Border",
         "BorderRadius",
+        "BorderSide",
         "BottomAppBar",
         "BottomAppBarTheme",
         "BottomNavigationBarTheme",
@@ -341,331 +314,72 @@
         "WebView",
         "WindowDragArea",
         "context",
-        "canvas.Arc",
-        "canvas.Canvas",
-        "canvas.CanvasResizeEvent",
-        "canvas.Circle",
-        "canvas.Color",
-        "canvas.Fill",
-        "canvas.Line",
-        "canvas.Oval",
-        "canvas.Path",
-        "canvas.PointMode",
-        "canvas.Points",
-        "canvas.Rect",
-        "canvas.Shadow",
-        "canvas.Text"
+        "alignment.bottom_center",
+        "alignment.bottom_left",
+        "alignment.bottom_right",
+        "alignment.center",
+        "alignment.center_left",
+        "alignment.center_right",
+        "alignment.top_center",
+        "alignment.top_left",
+        "alignment.top_right",
+        "animation.implicit",
+        "ReleaseMode",
+        "Authorization",
+        "Group",
+        "OAuthProvider",
+        "OAuthToken",
+        "User",
+        "border.all",
+        "border.only",
+        "border.symmetric",
+        "border_radius.all",
+        "border_radius.horizontal",
+        "border_radius.only",
+        "border_radius.vertical",
+        "Arc",
+        "Canvas",
+        "CanvasResizeEvent",
+        "Circle",
+        "Color",
+        "Fill",
+        "Line",
+        "Oval",
+        "Path",
+        "PointMode",
+        "Points",
+        "Rect",
+        "Shadow",
+        "ClientStorage",
+        "colors.random_color",
+        "colors.with_opacity",
+        "ConstrainedControl",
+        "Item",
+        "DragTargetEvent",
+        "Option",
+        "EmbedJsonEncoder",
+        "FilePickerFile",
+        "FletSocketServer",
+        "FormFieldControl",
+        "Gradient",
+        "InlineSpan",
+        "margin.all",
+        "margin.only",
+        "margin.symmetric",
+        "MatplotlibChart",
+        "padding.all",
+        "padding.only",
+        "padding.symmetric",
+        "InvokeMethodResults",
+        "Offstage",
+        "PaintGradient",
+        "PlotlyChart",
+        "ref.T",
+        "ScrollableControl",
+        "BottomSheetTheme",
+        "ThemeVisualDensityDeprecated"
     ],
     "ControlTypes": [
-        {
-            "name": "animation.implicit",
-            "source": "flet_core.animation",
-            "attr": "implicit",
-            "awaitable": false,
-            "valid_settings": [
-                "duration",
-                "curve"
-            ]
-        },
-        {
-            "name": "Option",
-            "source": "flet_core.dropdown",
-            "attr": "Option",
-            "awaitable": false,
-            "valid_settings": [
-                "key",
-                "text",
-                "alignment",
-                "on_click",
-                "ref",
-                "disabled",
-                "visible",
-                "data"
-            ]
-        },
-        {
-            "name": "BorderSide",
-            "source": "flet_core.border",
-            "attr": "BorderSide",
-            "awaitable": false,
-            "valid_settings": [
-                "width",
-                "color"
-            ]
-        },
-        {
-            "name": "color.with_opacity",
-            "source": "flet_core.colors",
-            "attr": "with_opacity",
-            "awaitable": false,
-            "valid_settings": [
-                "opacity",
-                "color"
-            ]
-        },
-        {
-            "name": "margin.symmetric",
-            "source": "flet_core.margin",
-            "attr": "symmetric",
-            "awaitable": false,
-            "valid_settings": [
-                "vertical",
-                "horizontal"
-            ]
-        },
-        {
-            "name": "margin.all",
-            "source": "flet_core.margin",
-            "attr": "all",
-            "awaitable": false,
-            "valid_settings": [
-                "value"
-            ]
-        },
-        {
-            "name": "margin.only",
-            "source": "flet_core.margin",
-            "attr": "only",
-            "awaitable": false,
-            "valid_settings": [
-                "left",
-                "top",
-                "right",
-                "bottom"
-            ]
-        },
-        {
-            "name": "padding.symmetric",
-            "source": "flet_core.padding",
-            "attr": "symmetric",
-            "awaitable": false,
-            "valid_settings": [
-                "vertical",
-                "horizontal"
-            ]
-        },
-        {
-            "name": "padding.all",
-            "source": "flet_core.padding",
-            "attr": "all",
-            "awaitable": false,
-            "valid_settings": [
-                "value"
-            ]
-        },
-        {
-            "name": "padding.only",
-            "source": "flet_core.padding",
-            "attr": "only",
-            "awaitable": false,
-            "valid_settings": [
-                "left",
-                "top",
-                "right",
-                "bottom"
-            ]
-        },
-        {
-            "name": "border.symmetric",
-            "source": "flet_core.border",
-            "attr": "symmetric",
-            "awaitable": false,
-            "valid_settings": [
-                "vertical",
-                "horizontal"
-            ]
-        },
-        {
-            "name": "border.all",
-            "source": "flet_core.border",
-            "attr": "all",
-            "awaitable": false,
-            "valid_settings": [
-                "width",
-                "color"
-            ]
-        },
-        {
-            "name": "border.only",
-            "source": "flet_core.border",
-            "attr": "only",
-            "awaitable": false,
-            "valid_settings": [
-                "left",
-                "top",
-                "right",
-                "bottom"
-            ]
-        },
-        {
-            "name": "border_radius.horizontal",
-            "source": "flet_core.border_radius",
-            "attr": "horizontal",
-            "awaitable": false,
-            "valid_settings": [
-                "left",
-                "right"
-            ]
-        },
-        {
-            "name": "border_radius.vertical",
-            "source": "flet_core.border_radius",
-            "attr": "vertical",
-            "awaitable": false,
-            "valid_settings": [
-                "top",
-                "bottom"
-            ]
-        },
-        {
-            "name": "border_radius.all",
-            "source": "flet_core.border_radius",
-            "attr": "all",
-            "awaitable": false,
-            "valid_settings": [
-                "value"
-            ]
-        },
-        {
-            "name": "border_radius.only",
-            "source": "flet_core.border_radius",
-            "attr": "only",
-            "awaitable": false,
-            "valid_settings": [
-                "top_left",
-                "top_right",
-                "bottom_left",
-                "bottom_right"
-            ]
-        },
-        {
-            "name": "alignment.bottom_center",
-            "source": "flet_core.alignment",
-            "attr": "bottom_center",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.bottom_left",
-            "source": "flet_core.alignment",
-            "attr": "bottom_left",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.bottom_right",
-            "source": "flet_core.alignment",
-            "attr": "bottom_right",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.center",
-            "source": "flet_core.alignment",
-            "attr": "center",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.center_right",
-            "source": "flet_core.alignment",
-            "attr": "center_right",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.center_left",
-            "source": "flet_core.alignment",
-            "attr": "center_left",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.top_center",
-            "source": "flet_core.alignment",
-            "attr": "top_center",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.top_left",
-            "source": "flet_core.alignment",
-            "attr": "top_left",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "alignment.top_right",
-            "source": "flet_core.alignment",
-            "attr": "top_right",
-            "awaitable": false,
-            "valid_settings": []
-        },
-        {
-            "name": "MatplotlibChart",
-            "source": "flet.matplotlib_chart",
-            "attr": "MatplotlibChart",
-            "awaitable": false,
-            "valid_settings": [
-                "figure",
-                "isolated",
-                "original_size",
-                "transparent",
-                "ref",
-                "key",
-                "expand",
-                "expand_loose",
-                "col",
-                "opacity",
-                "rotate",
-                "scale",
-                "offset",
-                "aspect_ratio",
-                "animate_opacity",
-                "animate_size",
-                "animate_position",
-                "animate_rotation",
-                "animate_scale",
-                "animate_offset",
-                "on_animation_end",
-                "tooltip",
-                "visible",
-                "disabled",
-                "data"
-            ]
-        },
-        {
-            "name": "PlotlyChart",
-            "source": "flet.plotly_chart",
-            "attr": "PlotlyChart",
-            "awaitable": false,
-            "valid_settings": [
-                "figure",
-                "isolated",
-                "original_size",
-                "ref",
-                "key",
-                "expand",
-                "expand_loose",
-                "col",
-                "opacity",
-                "rotate",
-                "scale",
-                "offset",
-                "aspect_ratio",
-                "animate_opacity",
-                "animate_size",
-                "animate_position",
-                "animate_rotation",
-                "animate_scale",
-                "animate_offset",
-                "on_animation_end",
-                "tooltip",
-                "visible",
-                "disabled",
-                "data"
-            ]
-        },
         {
             "name": "AdaptiveControl",
             "source": "flet",
@@ -771,9 +485,9 @@
             "attr": "AnimatedSwitcherTransition",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "fade",
+                "rotation",
+                "scale"
             ]
         },
         {
@@ -792,9 +506,48 @@
             "attr": "AnimationCurve",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "bounceIn",
+                "bounceInOut",
+                "bounceOut",
+                "decelerate",
+                "ease",
+                "easeIn",
+                "easeInBack",
+                "easeInCirc",
+                "easeInCubic",
+                "easeInExpo",
+                "easeInOut",
+                "easeInOutBack",
+                "easeInOutCirc",
+                "easeInOutCubic",
+                "easeInOutCubicEmphasized",
+                "easeInOutExpo",
+                "easeInOutQuad",
+                "easeInOutQuart",
+                "easeInOutQuint",
+                "easeInOutSine",
+                "easeInQuad",
+                "easeInQuart",
+                "easeInQuint",
+                "easeInSine",
+                "easeInToLinear",
+                "easeOut",
+                "easeOutBack",
+                "easeOutCirc",
+                "easeOutCubic",
+                "easeOutExpo",
+                "easeOutQuad",
+                "easeOutQuart",
+                "easeOutQuint",
+                "easeOutSine",
+                "elasticIn",
+                "elasticInOut",
+                "elasticOut",
+                "fastLinearToSlowEaseIn",
+                "fastOutSlowIn",
+                "linear",
+                "linearToEaseOut",
+                "slowMiddle"
             ]
         },
         {
@@ -856,9 +609,13 @@
             "attr": "AppLifecycleState",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "show",
+                "resume",
+                "hide",
+                "inactive",
+                "pause",
+                "detach",
+                "restart"
             ]
         },
         {
@@ -876,9 +633,10 @@
             "attr": "AppView",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "web_browser",
+                "flet_app",
+                "flet_app_web",
+                "flet_app_hidden"
             ]
         },
         {
@@ -887,9 +645,8 @@
             "attr": "Assertiveness",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "polite",
+                "assertive"
             ]
         },
         {
@@ -920,9 +677,15 @@
             "attr": "AudioEncoder",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "aacLc",
+                "aacEld",
+                "aacHe",
+                "amrNb",
+                "amrWb",
+                "opus",
+                "flac",
+                "wav",
+                "pcm16bits"
             ]
         },
         {
@@ -1165,9 +928,36 @@
             "attr": "BlendMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "clear",
+                "color",
+                "colorBurn",
+                "colorDodge",
+                "darken",
+                "difference",
+                "dst",
+                "dstATop",
+                "dstIn",
+                "dstOut",
+                "dstOver",
+                "exclusion",
+                "hardLight",
+                "hue",
+                "lighten",
+                "luminosity",
+                "modulate",
+                "multiply",
+                "overlay",
+                "plus",
+                "saturation",
+                "screen",
+                "softLight",
+                "src",
+                "srcATop",
+                "srcIn",
+                "srcOut",
+                "srcOver",
+                "values",
+                "xor"
             ]
         },
         {
@@ -1187,9 +977,10 @@
             "attr": "BlurTileMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "clamp",
+                "decal",
+                "mirror",
+                "repeated"
             ]
         },
         {
@@ -1214,6 +1005,16 @@
                 "top_right",
                 "bottom_left",
                 "bottom_right"
+            ]
+        },
+        {
+            "name": "BorderSide",
+            "source": "flet",
+            "attr": "BorderSide",
+            "awaitable": false,
+            "valid_settings": [
+                "width",
+                "color"
             ]
         },
         {
@@ -1331,9 +1132,8 @@
             "attr": "BoxShape",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "rectangle",
+                "circle"
             ]
         },
         {
@@ -1342,9 +1142,8 @@
             "attr": "Brightness",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "light",
+                "dark"
             ]
         },
         {
@@ -1433,9 +1232,9 @@
             "attr": "CardVariant",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "elevated",
+                "filled",
+                "outlined"
             ]
         },
         {
@@ -1765,9 +1564,10 @@
             "attr": "ClipBehavior",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "antiAlias",
+                "antiAliasWithSaveLayer",
+                "hardEdge"
             ]
         },
         {
@@ -1980,9 +1780,11 @@
             "attr": "CrossAxisAlignment",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "start",
+                "end",
+                "center",
+                "stretch",
+                "baseline"
             ]
         },
         {
@@ -2337,9 +2139,10 @@
             "attr": "CupertinoDatePickerDateOrder",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "dmy",
+                "myd",
+                "ymd",
+                "ydm"
             ]
         },
         {
@@ -2348,9 +2151,10 @@
             "attr": "CupertinoDatePickerMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "time",
+                "date",
+                "dateAndTime",
+                "monthYear"
             ]
         },
         {
@@ -2897,9 +2701,9 @@
             "attr": "CupertinoTimerPickerMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "hm",
+                "hms",
+                "ms"
             ]
         },
         {
@@ -3068,9 +2872,10 @@
             "attr": "DatePickerEntryMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "calendar",
+                "input",
+                "calendarOnly",
+                "inputOnly"
             ]
         },
         {
@@ -3088,9 +2893,8 @@
             "attr": "DatePickerMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "day",
+                "year"
             ]
         },
         {
@@ -3159,9 +2963,13 @@
             "attr": "DismissDirection",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "vertical",
+                "horizontal",
+                "endToStart",
+                "startToEnd",
+                "up",
+                "down"
             ]
         },
         {
@@ -3663,9 +3471,12 @@
             "attr": "FilePickerFileType",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "any",
+                "media",
+                "image",
+                "video",
+                "audio",
+                "custom"
             ]
         },
         {
@@ -3770,9 +3581,10 @@
             "attr": "FilterQuality",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "low",
+                "medium",
+                "high"
             ]
         },
         {
@@ -3873,9 +3685,25 @@
             "attr": "FloatingActionButtonLocation",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "centerDocked",
+                "centerFloat",
+                "centerTop",
+                "endContained",
+                "endDocked",
+                "endFloat",
+                "endTop",
+                "miniCenterDocked",
+                "miniCenterFloat",
+                "miniCenterTop",
+                "miniEndDocked",
+                "miniEndFloat",
+                "miniEndTop",
+                "miniStartDocked",
+                "miniStartFloat",
+                "miniStartTop",
+                "startDocked",
+                "startFloat",
+                "startTop"
             ]
         },
         {
@@ -3907,9 +3735,17 @@
             "attr": "FontWeight",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "normal",
+                "bold",
+                "w100",
+                "w200",
+                "w300",
+                "w400",
+                "w500",
+                "w600",
+                "w700",
+                "w800",
+                "w900"
             ]
         },
         {
@@ -3988,9 +3824,10 @@
             "attr": "GradientTileMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "clamp",
+                "decal",
+                "mirror",
+                "repeated"
             ]
         },
         {
@@ -4234,9 +4071,13 @@
             "attr": "ImageFit",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "contain",
+                "cover",
+                "fill",
+                "fitHeight",
+                "fitWidth",
+                "scaleDown"
             ]
         },
         {
@@ -4245,9 +4086,10 @@
             "attr": "ImageRepeat",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "noRepeat",
+                "repeat",
+                "repeatX",
+                "repeatY"
             ]
         },
         {
@@ -4256,9 +4098,9 @@
             "attr": "InputBorder",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "outline",
+                "underline"
             ]
         },
         {
@@ -4291,9 +4133,17 @@
             "attr": "KeyboardType",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "text",
+                "multiline",
+                "number",
+                "phone",
+                "datetime",
+                "email",
+                "url",
+                "visiblePassword",
+                "name",
+                "streetAddress"
             ]
         },
         {
@@ -4302,9 +4152,8 @@
             "attr": "LabelPosition",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "right",
+                "left"
             ]
         },
         {
@@ -4529,9 +4378,8 @@
             "attr": "ListTileStyle",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "list",
+                "drawer"
             ]
         },
         {
@@ -4565,9 +4413,11 @@
             "attr": "ListTileTitleAlignment",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "top",
+                "center",
+                "bottom",
+                "threeLine",
+                "titleHeight"
             ]
         },
         {
@@ -4732,9 +4582,12 @@
             "attr": "MainAxisAlignment",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "start",
+                "end",
+                "center",
+                "spaceBetween",
+                "spaceAround",
+                "spaceEvenly"
             ]
         },
         {
@@ -4798,9 +4651,10 @@
             "attr": "MarkdownExtensionSet",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "commonMark",
+                "gitHubWeb",
+                "gitHubFlavored"
             ]
         },
         {
@@ -4809,9 +4663,15 @@
             "attr": "MaterialState",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "hovered",
+                "focused",
+                "pressed",
+                "dragged",
+                "selected",
+                "scrolledUnder",
+                "disabled",
+                "error",
+                ""
             ]
         },
         {
@@ -4902,9 +4762,42 @@
             "attr": "MouseCursor",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "alias",
+                "allScroll",
+                "basic",
+                "cell",
+                "click",
+                "contextMenu",
+                "copy",
+                "disappearing",
+                "forbidden",
+                "grab",
+                "grabbing",
+                "help",
+                "move",
+                "noDrop",
+                "none",
+                "precise",
+                "progress",
+                "resizeColumn",
+                "resizeDown",
+                "resizeDownLeft",
+                "resizeDownRight",
+                "resizeLeft",
+                "resizeLeftRight",
+                "resizeRight",
+                "resizeRow",
+                "resizeUp",
+                "resizeUpDown",
+                "resizeUpLeft",
+                "resizeUpLeftDownRight",
+                "resizeUpRight",
+                "resizeUpRightDownLeft",
+                "text",
+                "verticalText",
+                "wait",
+                "zoomIn",
+                "zoomOut"
             ]
         },
         {
@@ -4969,9 +4862,9 @@
             "attr": "NavigationBarLabelBehavior",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "alwaysShow",
+                "alwaysHide",
+                "onlyShowSelected"
             ]
         },
         {
@@ -5140,9 +5033,9 @@
             "attr": "NavigationRailLabelType",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "all",
+                "selected"
             ]
         },
         {
@@ -5170,9 +5063,8 @@
             "attr": "NotchShape",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "auto",
+                "circular"
             ]
         },
         {
@@ -5215,9 +5107,8 @@
             "attr": "Orientation",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "portrait",
+                "landscape"
             ]
         },
         {
@@ -5327,9 +5218,11 @@
             "attr": "PagePlatform",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "ios",
+                "android",
+                "macos",
+                "windows",
+                "linux"
             ]
         },
         {
@@ -5338,9 +5231,11 @@
             "attr": "PageTransitionTheme",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "fadeUpwards",
+                "openUpwards",
+                "zoom",
+                "cupertino"
             ]
         },
         {
@@ -5473,9 +5368,8 @@
             "attr": "PaintingStyle",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "fill",
+                "stroke"
             ]
         },
         {
@@ -5556,9 +5450,9 @@
             "attr": "PlaylistMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "none",
+                "single",
+                "loop"
             ]
         },
         {
@@ -5639,9 +5533,8 @@
             "attr": "PopupMenuPosition",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "over",
+                "under"
             ]
         },
         {
@@ -6221,9 +6114,10 @@
             "attr": "ScrollMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "auto",
+                "adaptive",
+                "always",
+                "hidden"
             ]
         },
         {
@@ -6530,9 +6424,10 @@
             "attr": "ShadowBlurStyle",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "normal",
+                "solid",
+                "outer",
+                "inner"
             ]
         },
         {
@@ -6612,9 +6507,10 @@
             "attr": "SliderInteraction",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "tapAndSlide",
+                "tapOnly",
+                "slideOnly",
+                "slideThumb"
             ]
         },
         {
@@ -6669,9 +6565,8 @@
             "attr": "SnackBarBehavior",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "fixed",
+                "floating"
             ]
         },
         {
@@ -6743,9 +6638,9 @@
             "attr": "StackFit",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "loose",
+                "expand",
+                "passThrough"
             ]
         },
         {
@@ -6763,9 +6658,9 @@
             "attr": "StrokeCap",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "round",
+                "square",
+                "butt"
             ]
         },
         {
@@ -6774,9 +6669,9 @@
             "attr": "StrokeJoin",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "miter",
+                "round",
+                "bevel"
             ]
         },
         {
@@ -6953,9 +6848,10 @@
             "attr": "TabAlignment",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "start",
+                "startOffset",
+                "fill",
+                "center"
             ]
         },
         {
@@ -7115,9 +7011,12 @@
             "attr": "TextAlign",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "left",
+                "right",
+                "center",
+                "justify",
+                "start",
+                "end"
             ]
         },
         {
@@ -7175,9 +7074,9 @@
             "attr": "TextCapitalization",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "characters",
+                "words",
+                "sentences"
             ]
         },
         {
@@ -7186,9 +7085,9 @@
             "attr": "TextDecoration",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                1,
+                2,
+                4
             ]
         },
         {
@@ -7197,9 +7096,11 @@
             "attr": "TextDecorationStyle",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "solid",
+                "double",
+                "dotted",
+                "dashed",
+                "wavy"
             ]
         },
         {
@@ -7313,9 +7214,11 @@
             "attr": "TextOverflow",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                null,
+                "clip",
+                "ellipsis",
+                "fade",
+                "visible"
             ]
         },
         {
@@ -7389,9 +7292,21 @@
             "attr": "TextThemeStyle",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "displayLarge",
+                "displayMedium",
+                "displaySmall",
+                "headlineLarge",
+                "headlineMedium",
+                "headlineSmall",
+                "titleLarge",
+                "titleMedium",
+                "titleSmall",
+                "labelLarge",
+                "labelMedium",
+                "labelSmall",
+                "bodyLarge",
+                "bodyMedium",
+                "bodySmall"
             ]
         },
         {
@@ -7450,9 +7365,9 @@
             "attr": "ThemeMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "system",
+                "light",
+                "dark"
             ]
         },
         {
@@ -7461,9 +7376,11 @@
             "attr": "ThemeVisualDensity",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                null,
+                "standard",
+                "compact",
+                "comfortable",
+                "adaptivePlatformDensity"
             ]
         },
         {
@@ -7472,9 +7389,9 @@
             "attr": "TileAffinity",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "leading",
+                "trailing",
+                "platform"
             ]
         },
         {
@@ -7513,9 +7430,10 @@
             "attr": "TimePickerEntryMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "dial",
+                "input",
+                "dialOnly",
+                "inputOnly"
             ]
         },
         {
@@ -7640,9 +7558,10 @@
             "attr": "UrlTarget",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "blank",
+                "_self",
+                "_parent",
+                "_top"
             ]
         },
         {
@@ -7658,9 +7577,10 @@
             "attr": "VerticalAlignment",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                null,
+                -1.0,
+                1.0,
+                0.0
             ]
         },
         {
@@ -7806,9 +7726,10 @@
             "attr": "VisibilityMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "never",
+                "editing",
+                "notEditing",
+                "always"
             ]
         },
         {
@@ -7817,9 +7738,9 @@
             "attr": "WebRenderer",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "auto",
+                "html",
+                "canvaskit"
             ]
         },
         {
@@ -7908,8 +7829,232 @@
             "valid_settings": []
         },
         {
-            "name": "canvas.Arc",
-            "source": "flet.canvas",
+            "name": "alignment.bottom_center",
+            "source": "flet_core.alignment",
+            "attr": "bottom_center",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.bottom_left",
+            "source": "flet_core.alignment",
+            "attr": "bottom_left",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.bottom_right",
+            "source": "flet_core.alignment",
+            "attr": "bottom_right",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.center",
+            "source": "flet_core.alignment",
+            "attr": "center",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.center_left",
+            "source": "flet_core.alignment",
+            "attr": "center_left",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.center_right",
+            "source": "flet_core.alignment",
+            "attr": "center_right",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.top_center",
+            "source": "flet_core.alignment",
+            "attr": "top_center",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.top_left",
+            "source": "flet_core.alignment",
+            "attr": "top_left",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "alignment.top_right",
+            "source": "flet_core.alignment",
+            "attr": "top_right",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "animation.implicit",
+            "source": "flet_core.animation",
+            "attr": "implicit",
+            "awaitable": false,
+            "valid_settings": [
+                "duration",
+                "curve"
+            ]
+        },
+        {
+            "name": "ReleaseMode",
+            "source": "flet_core.audio",
+            "attr": "ReleaseMode",
+            "awaitable": false,
+            "valid_settings": [
+                "release",
+                "loop",
+                "stop"
+            ]
+        },
+        {
+            "name": "Authorization",
+            "source": "flet_runtime.auth.authorization",
+            "attr": "Authorization",
+            "awaitable": false,
+            "valid_settings": [
+                "provider",
+                "fetch_user",
+                "fetch_groups",
+                "scope"
+            ]
+        },
+        {
+            "name": "Group",
+            "source": "flet_runtime.auth.group",
+            "attr": "Group",
+            "awaitable": false,
+            "valid_settings": [
+                "kwargs",
+                "name"
+            ]
+        },
+        {
+            "name": "OAuthProvider",
+            "source": "flet_runtime.auth.oauth_provider",
+            "attr": "OAuthProvider",
+            "awaitable": false,
+            "valid_settings": [
+                "client_id",
+                "client_secret",
+                "authorization_endpoint",
+                "token_endpoint",
+                "redirect_url",
+                "scopes",
+                "user_scopes",
+                "user_endpoint",
+                "user_id_fn",
+                "group_scopes",
+                "code_challenge",
+                "code_challenge_method",
+                "code_verifier"
+            ]
+        },
+        {
+            "name": "OAuthToken",
+            "source": "flet_runtime.auth.oauth_token",
+            "attr": "OAuthToken",
+            "awaitable": false,
+            "valid_settings": [
+                "access_token",
+                "scope",
+                "token_type",
+                "expires_in",
+                "expires_at",
+                "refresh_token"
+            ]
+        },
+        {
+            "name": "User",
+            "source": "flet_runtime.auth.user",
+            "attr": "User",
+            "awaitable": false,
+            "valid_settings": [
+                "kwargs",
+                "id"
+            ]
+        },
+        {
+            "name": "border.all",
+            "source": "flet_core.border",
+            "attr": "all",
+            "awaitable": false,
+            "valid_settings": [
+                "width",
+                "color"
+            ]
+        },
+        {
+            "name": "border.only",
+            "source": "flet_core.border",
+            "attr": "only",
+            "awaitable": false,
+            "valid_settings": [
+                "left",
+                "top",
+                "right",
+                "bottom"
+            ]
+        },
+        {
+            "name": "border.symmetric",
+            "source": "flet_core.border",
+            "attr": "symmetric",
+            "awaitable": false,
+            "valid_settings": [
+                "vertical",
+                "horizontal"
+            ]
+        },
+        {
+            "name": "border_radius.all",
+            "source": "flet_core.border_radius",
+            "attr": "all",
+            "awaitable": false,
+            "valid_settings": [
+                "value"
+            ]
+        },
+        {
+            "name": "border_radius.horizontal",
+            "source": "flet_core.border_radius",
+            "attr": "horizontal",
+            "awaitable": false,
+            "valid_settings": [
+                "left",
+                "right"
+            ]
+        },
+        {
+            "name": "border_radius.only",
+            "source": "flet_core.border_radius",
+            "attr": "only",
+            "awaitable": false,
+            "valid_settings": [
+                "top_left",
+                "top_right",
+                "bottom_left",
+                "bottom_right"
+            ]
+        },
+        {
+            "name": "border_radius.vertical",
+            "source": "flet_core.border_radius",
+            "attr": "vertical",
+            "awaitable": false,
+            "valid_settings": [
+                "top",
+                "bottom"
+            ]
+        },
+        {
+            "name": "Arc",
+            "source": "flet_core.canvas.arc",
             "attr": "Arc",
             "awaitable": false,
             "valid_settings": [
@@ -7928,8 +8073,8 @@
             ]
         },
         {
-            "name": "canvas.Canvas",
-            "source": "flet.canvas",
+            "name": "Canvas",
+            "source": "flet_core.canvas.canvas",
             "attr": "Canvas",
             "awaitable": false,
             "valid_settings": [
@@ -7965,8 +8110,8 @@
             ]
         },
         {
-            "name": "canvas.CanvasResizeEvent",
-            "source": "flet.canvas",
+            "name": "CanvasResizeEvent",
+            "source": "flet_core.canvas.canvas",
             "attr": "CanvasResizeEvent",
             "awaitable": false,
             "valid_settings": [
@@ -7975,8 +8120,8 @@
             ]
         },
         {
-            "name": "canvas.Circle",
-            "source": "flet.canvas",
+            "name": "Circle",
+            "source": "flet_core.canvas.circle",
             "attr": "Circle",
             "awaitable": false,
             "valid_settings": [
@@ -7991,8 +8136,8 @@
             ]
         },
         {
-            "name": "canvas.Color",
-            "source": "flet.canvas",
+            "name": "Color",
+            "source": "flet_core.canvas.color",
             "attr": "Color",
             "awaitable": false,
             "valid_settings": [
@@ -8005,8 +8150,8 @@
             ]
         },
         {
-            "name": "canvas.Fill",
-            "source": "flet.canvas",
+            "name": "Fill",
+            "source": "flet_core.canvas.fill",
             "attr": "Fill",
             "awaitable": false,
             "valid_settings": [
@@ -8018,8 +8163,8 @@
             ]
         },
         {
-            "name": "canvas.Line",
-            "source": "flet.canvas",
+            "name": "Line",
+            "source": "flet_core.canvas.line",
             "attr": "Line",
             "awaitable": false,
             "valid_settings": [
@@ -8035,8 +8180,8 @@
             ]
         },
         {
-            "name": "canvas.Oval",
-            "source": "flet.canvas",
+            "name": "Oval",
+            "source": "flet_core.canvas.oval",
             "attr": "Oval",
             "awaitable": false,
             "valid_settings": [
@@ -8052,8 +8197,8 @@
             ]
         },
         {
-            "name": "canvas.Path",
-            "source": "flet.canvas",
+            "name": "Path",
+            "source": "flet_core.canvas.path",
             "attr": "Path",
             "awaitable": false,
             "valid_settings": [
@@ -8066,19 +8211,19 @@
             ]
         },
         {
-            "name": "canvas.PointMode",
-            "source": "flet.canvas",
+            "name": "PointMode",
+            "source": "flet_core.canvas.points",
             "attr": "PointMode",
             "awaitable": false,
             "valid_settings": [
-                "cls",
-                "value",
-                "names"
+                "points",
+                "lines",
+                "polygon"
             ]
         },
         {
-            "name": "canvas.Points",
-            "source": "flet.canvas",
+            "name": "Points",
+            "source": "flet_core.canvas.points",
             "attr": "Points",
             "awaitable": false,
             "valid_settings": [
@@ -8092,8 +8237,8 @@
             ]
         },
         {
-            "name": "canvas.Rect",
-            "source": "flet.canvas",
+            "name": "Rect",
+            "source": "flet_core.canvas.rect",
             "attr": "Rect",
             "awaitable": false,
             "valid_settings": [
@@ -8110,8 +8255,8 @@
             ]
         },
         {
-            "name": "canvas.Shadow",
-            "source": "flet.canvas",
+            "name": "Shadow",
+            "source": "flet_core.canvas.shadow",
             "attr": "Shadow",
             "awaitable": false,
             "valid_settings": [
@@ -8126,26 +8271,437 @@
             ]
         },
         {
-            "name": "canvas.Text",
-            "source": "flet.canvas",
-            "attr": "Text",
+            "name": "ClientStorage",
+            "source": "flet_core.client_storage",
+            "attr": "ClientStorage",
             "awaitable": false,
             "valid_settings": [
-                "x",
-                "y",
-                "text",
-                "style",
-                "spans",
-                "alignment",
-                "text_align",
-                "max_lines",
-                "max_width",
-                "ellipsis",
+                "page"
+            ]
+        },
+        {
+            "name": "colors.random_color",
+            "source": "flet_core.colors",
+            "attr": "random_color",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "colors.with_opacity",
+            "source": "flet_core.colors",
+            "attr": "with_opacity",
+            "awaitable": false,
+            "valid_settings": [
+                "opacity",
+                "color"
+            ]
+        },
+        {
+            "name": "ConstrainedControl",
+            "source": "flet_core.constrained_control",
+            "attr": "ConstrainedControl",
+            "awaitable": false,
+            "valid_settings": [
+                "ref",
+                "expand",
+                "expand_loose",
+                "col",
+                "opacity",
+                "tooltip",
+                "visible",
+                "disabled",
+                "data",
+                "rtl",
+                "key",
+                "width",
+                "height",
+                "left",
+                "top",
+                "right",
+                "bottom",
                 "rotate",
+                "scale",
+                "offset",
+                "aspect_ratio",
+                "animate_opacity",
+                "animate_size",
+                "animate_position",
+                "animate_rotation",
+                "animate_scale",
+                "animate_offset",
+                "on_animation_end"
+            ]
+        },
+        {
+            "name": "Item",
+            "source": "flet_core.datatable",
+            "attr": "Item",
+            "awaitable": false,
+            "valid_settings": [
+                "obj"
+            ]
+        },
+        {
+            "name": "DragTargetEvent",
+            "source": "flet_core.drag_target",
+            "attr": "DragTargetEvent",
+            "awaitable": false,
+            "valid_settings": [
+                "src_id",
+                "x",
+                "y"
+            ]
+        },
+        {
+            "name": "Option",
+            "source": "flet_core.dropdown",
+            "attr": "Option",
+            "awaitable": false,
+            "valid_settings": [
+                "key",
+                "text",
+                "alignment",
+                "on_click",
+                "ref",
+                "disabled",
+                "visible",
+                "data"
+            ]
+        },
+        {
+            "name": "EmbedJsonEncoder",
+            "source": "flet_core.embed_json_encoder",
+            "attr": "EmbedJsonEncoder",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "FilePickerFile",
+            "source": "flet_core.file_picker",
+            "attr": "FilePickerFile",
+            "awaitable": false,
+            "valid_settings": [
+                "name",
+                "path",
+                "size"
+            ]
+        },
+        {
+            "name": "FletSocketServer",
+            "source": "flet_runtime.flet_socket_server",
+            "attr": "FletSocketServer",
+            "awaitable": false,
+            "valid_settings": [
+                "loop",
+                "port",
+                "uds_path",
+                "on_event",
+                "on_session_created",
+                "blocking",
+                "executor"
+            ]
+        },
+        {
+            "name": "FormFieldControl",
+            "source": "flet_core.form_field_control",
+            "attr": "FormFieldControl",
+            "awaitable": false,
+            "valid_settings": [
+                "text_size",
+                "text_style",
+                "text_vertical_align",
+                "label",
+                "label_style",
+                "icon",
+                "border",
+                "color",
+                "bgcolor",
+                "border_radius",
+                "border_width",
+                "border_color",
+                "focused_color",
+                "focused_bgcolor",
+                "focused_border_width",
+                "focused_border_color",
+                "content_padding",
+                "dense",
+                "filled",
+                "fill_color",
+                "hover_color",
+                "hint_text",
+                "hint_style",
+                "helper_text",
+                "helper_style",
+                "counter_text",
+                "counter_style",
+                "error_text",
+                "error_style",
+                "prefix",
+                "prefix_icon",
+                "prefix_text",
+                "prefix_style",
+                "suffix",
+                "suffix_icon",
+                "suffix_text",
+                "suffix_style",
+                "rtl",
+                "ref",
+                "key",
+                "width",
+                "height",
+                "left",
+                "top",
+                "right",
+                "bottom",
+                "expand",
+                "expand_loose",
+                "col",
+                "opacity",
+                "rotate",
+                "scale",
+                "offset",
+                "aspect_ratio",
+                "animate_opacity",
+                "animate_size",
+                "animate_position",
+                "animate_rotation",
+                "animate_scale",
+                "animate_offset",
+                "on_animation_end",
+                "tooltip",
+                "visible",
+                "disabled",
+                "data"
+            ]
+        },
+        {
+            "name": "Gradient",
+            "source": "flet_core.gradients",
+            "attr": "Gradient",
+            "awaitable": false,
+            "valid_settings": [
+                "colors",
+                "tile_mode",
+                "rotation",
+                "stops"
+            ]
+        },
+        {
+            "name": "InlineSpan",
+            "source": "flet_core.inline_span",
+            "attr": "InlineSpan",
+            "awaitable": false,
+            "valid_settings": [
                 "ref",
                 "visible",
                 "disabled",
                 "data"
+            ]
+        },
+        {
+            "name": "margin.all",
+            "source": "flet_core.margin",
+            "attr": "all",
+            "awaitable": false,
+            "valid_settings": [
+                "value"
+            ]
+        },
+        {
+            "name": "margin.only",
+            "source": "flet_core.margin",
+            "attr": "only",
+            "awaitable": false,
+            "valid_settings": [
+                "left",
+                "top",
+                "right",
+                "bottom"
+            ]
+        },
+        {
+            "name": "margin.symmetric",
+            "source": "flet_core.margin",
+            "attr": "symmetric",
+            "awaitable": false,
+            "valid_settings": [
+                "vertical",
+                "horizontal"
+            ]
+        },
+        {
+            "name": "MatplotlibChart",
+            "source": "flet_core.matplotlib_chart",
+            "attr": "MatplotlibChart",
+            "awaitable": false,
+            "valid_settings": [
+                "figure",
+                "isolated",
+                "original_size",
+                "transparent",
+                "ref",
+                "key",
+                "expand",
+                "expand_loose",
+                "col",
+                "opacity",
+                "rotate",
+                "scale",
+                "offset",
+                "aspect_ratio",
+                "animate_opacity",
+                "animate_size",
+                "animate_position",
+                "animate_rotation",
+                "animate_scale",
+                "animate_offset",
+                "on_animation_end",
+                "tooltip",
+                "visible",
+                "disabled",
+                "data"
+            ]
+        },
+        {
+            "name": "padding.all",
+            "source": "flet_core.padding",
+            "attr": "all",
+            "awaitable": false,
+            "valid_settings": [
+                "value"
+            ]
+        },
+        {
+            "name": "padding.only",
+            "source": "flet_core.padding",
+            "attr": "only",
+            "awaitable": false,
+            "valid_settings": [
+                "left",
+                "top",
+                "right",
+                "bottom"
+            ]
+        },
+        {
+            "name": "padding.symmetric",
+            "source": "flet_core.padding",
+            "attr": "symmetric",
+            "awaitable": false,
+            "valid_settings": [
+                "vertical",
+                "horizontal"
+            ]
+        },
+        {
+            "name": "InvokeMethodResults",
+            "source": "flet_core.page",
+            "attr": "InvokeMethodResults",
+            "awaitable": false,
+            "valid_settings": [
+                "method_id",
+                "result",
+                "error"
+            ]
+        },
+        {
+            "name": "Offstage",
+            "source": "flet_core.page",
+            "attr": "Offstage",
+            "awaitable": false,
+            "valid_settings": [
+                "visible",
+                "disabled",
+                "data"
+            ]
+        },
+        {
+            "name": "PaintGradient",
+            "source": "flet_core.painting",
+            "attr": "PaintGradient",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "PlotlyChart",
+            "source": "flet_core.plotly_chart",
+            "attr": "PlotlyChart",
+            "awaitable": false,
+            "valid_settings": [
+                "figure",
+                "isolated",
+                "original_size",
+                "ref",
+                "key",
+                "expand",
+                "expand_loose",
+                "col",
+                "opacity",
+                "rotate",
+                "scale",
+                "offset",
+                "aspect_ratio",
+                "animate_opacity",
+                "animate_size",
+                "animate_position",
+                "animate_rotation",
+                "animate_scale",
+                "animate_offset",
+                "on_animation_end",
+                "tooltip",
+                "visible",
+                "disabled",
+                "data"
+            ]
+        },
+        {
+            "name": "ref.T",
+            "source": "flet_core.ref",
+            "attr": "T",
+            "awaitable": false,
+            "valid_settings": []
+        },
+        {
+            "name": "ScrollableControl",
+            "source": "flet_core.scrollable_control",
+            "attr": "ScrollableControl",
+            "awaitable": false,
+            "valid_settings": [
+                "scroll",
+                "auto_scroll",
+                "reverse",
+                "on_scroll_interval",
+                "on_scroll"
+            ]
+        },
+        {
+            "name": "BottomSheetTheme",
+            "source": "flet_core.theme",
+            "attr": "BottomSheetTheme",
+            "awaitable": false,
+            "valid_settings": [
+                "bgcolor",
+                "shadow_color",
+                "surface_tint_color",
+                "drag_handle_color",
+                "elevation",
+                "shape",
+                "show_drag_handle",
+                "modal_bgcolor",
+                "modal_elevation",
+                "clip_behavior"
+            ]
+        },
+        {
+            "name": "ThemeVisualDensityDeprecated",
+            "source": "flet_core.theme",
+            "attr": "ThemeVisualDensityDeprecated",
+            "awaitable": false,
+            "valid_settings": [
+                "metacls",
+                "cls",
+                "bases",
+                "classdict"
             ]
         }
     ]

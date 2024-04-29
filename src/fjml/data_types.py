@@ -9,6 +9,8 @@ from typing import (
     Protocol, Iterable,
     NoReturn
 )
+import inspect
+from enum import Enum
 
 import flet as ft
 
@@ -26,7 +28,8 @@ __all__ = [
     "UserInterfaceDict", "ParsedUserInterface", "LoopDict",
     "LoopItem", "ControlRegistryDictPreview", "EventContainer",
     "FunctionModel", "ControlContainer", "LoaderParameters",
-    "ControlBundle", "ControlRegistryModel", "TypeDict"
+    "ControlBundle", "ControlRegistryModel", "TypeDict",
+    "ObjectSource"
 ]
 
 class TypedList(list):
@@ -102,9 +105,6 @@ class ControlJsonScheme(TypedDict):
     name: str
     source: str
     attr: str
-    GET: list
-    POST: list
-    CALL: list
     awaitable: bool
     valid_settings: list[str]
 
@@ -228,7 +228,14 @@ class LoaderParameters:
         with open(self.ui_code, "r") as file:
             self.ui_code = json.load(file)
 
-
+@dataclass
+class ObjectSource:
+    obj: Any
+    source: str
+    
+    def __post_init__(self):
+        self.is_class: bool = inspect.isclass(self.obj)
+    
 @dataclass
 class ControlBundle:
     names: list[str]
@@ -265,29 +272,49 @@ class ControlBundle:
 @dataclass
 class ControlRegistryModel:
     name: str = ""
-    source: str = ""
+    source: ObjectSource = None
     attr: str = ""
-    is_awaitable: bool = False,
+    is_awaitable: bool = False
     
     def __post_init__(self) -> NoReturn:
+        self.object_args: list[str]
         
-        if not (self.name and self.source and self.attr):
-            raise ValueError()
+        self.object_args = self.generate_args()
+        if not self.source.is_class:
+            pass
+        elif issubclass(self.source.obj, Enum):
+            self.object_args = self.generate_args(is_enum=True)
+            
+        self.source = self.source.source
         
-        self.object_args: list[str] = Tools.get_object_args(
-            getattr(
-                utils.import_module(self.source, None),
-                self.attr
-            )
+        self.return_dict: ControlJsonScheme = ControlJsonScheme(
+            name=self.name,
+            source=self.source,
+            attr=self.attr,
+            awaitable=self.is_awaitable,
+            valid_settings=self.object_args
         )
         
-        if "self" in self.object_args:
-            self.object_args.remove("self")
+    def generate_args(self, is_enum: bool = False) -> list[str]:
         
-        self.return_dict: ControlJsonScheme = {
-            "name":self.name,
-            "source":self.source,
-            "attr":self.attr,
-            "awaitable":self.is_awaitable,
-            "valid_settings":self.object_args
-        }
+        if is_enum:
+            return self.remove_instance_refs(
+                list(map(lambda enum: enum.value, self.source.obj))
+            )
+        
+        if callable(self.source.obj):
+            return self.remove_instance_refs(
+                Tools.get_object_args(self.source.obj)
+            )
+        
+        return []
+    
+    def remove_instance_refs(self, data: list[str]) -> list[str]:
+        check = lambda arg, lst: lst[0] == arg
+        
+        if len(data) == 0: return data
+        if check("self", data): del data[0]
+        if len(data) == 0: return data
+        if check("cls", data): del data[0]
+        
+        return data
