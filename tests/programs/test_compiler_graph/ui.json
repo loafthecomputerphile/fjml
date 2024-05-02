@@ -4,7 +4,7 @@
     "Controls":[
         {
             "var_name":"opacity_color",
-            "control_type":"color.with_opacity",
+            "control_type":"colors.with_opacity",
             "settings":{
                 "opacity":0.2,
                 "color":"onsurface"
@@ -131,7 +131,7 @@
                     }
                 },
                 "tooltip_bgcolor":{
-                    "control_type":"color.with_opacity",
+                    "control_type":"colors.with_opacity",
                     "settings":{
                         "opacity":0.8,
                         "color":"blue_grey"

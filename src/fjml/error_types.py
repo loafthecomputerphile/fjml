@@ -1,4 +1,4 @@
-from typing import Literal, NoReturn
+from typing import Literal, NoReturn, Any
 from .constants import CONTROL_REGISTRY_PATH
 
 class ConditionalError:
@@ -17,6 +17,12 @@ class ConditionalError:
     def key_error(conditional: bool, error_text: str) -> NoReturn:
         if conditional:
             raise KeyError(error_text)
+
+
+class InvalidTypeError(Exception):
+    __module__: str = "builtins"
+    def __init__(self, var_name: str, value: Any, dtype: Any) -> NoReturn:
+        super().__init__(f"Variable {var_name}, expected type of {dtype}, isntead recieved type of {type(value)}, ")
 
 
 class UndefinedMethodError(Exception):

@@ -9,23 +9,24 @@ from typing import (
     Final,
     NoReturn
 )
-
+import types
 import flet as ft
 
 
-from ..constant_controls import CONSTANT_CONTROLS
+from .. import constant_controls
+
 from .builder import Build
-from . import control_register
+from .control_register import ControlRegistryOperations
 from ..constants import CONTROL_REGISTRY_PATH
 from .. import data_types as dt
 from .. import error_types as errors
-from ..utils import Utilities, import_module, RegistryOperations
+from ..utils import Utilities, import_module, RegistryFileOperations
 
 Tools: Utilities = Utilities()
 
 VALID_KEYS: Final[list[str]] = ["UI", "Imports", "Controls"]
 MARKUP_SPECIFIC_CONTROLS: Final[list[str]] = [
-    "loop", "ref", "loop_idx"
+    "loop", "ref", "loop_index"
 ]
 
 class Compiler:
@@ -36,12 +37,13 @@ class Compiler:
         "control_awaitable", "program_name", "program", 
         "used_controls", "routes", "custom_controls",
         "control_bundles", "methods", "imports_path", "controls_registry",
-        "are_registries_joined"
+        "are_registries_joined", "style_sheet"
     )
     
     def __init__(
         self, program_name: str, code_input: dict[str, Any], 
-        custom_controls: list[dt.ControlJsonScheme] = [], imports_path: str = ""
+        custom_controls: list[dt.ControlRegisterInterface] = [], imports_path: str = "",
+        style_sheet: dt.JsonDict = {}
     ) -> NoReturn:
         """
         __init__ _summary_
@@ -50,26 +52,28 @@ class Compiler:
             program_name (str): _description_
         """
         self.used_controls: set[str] = set()
+        self.style_sheet: dt.StyleSheet = dt.StyleSheet(style_sheet)
+        self.update_used_controls(self.style_sheet.data)
         custom_controls = self.add_constant_controls(custom_controls)
-        self.custom_controls: dt.ControlRegistryJsonScheme = {}
+        self.custom_controls: dt.ControlRegistryJsonScheme
         if custom_controls:
-            self.custom_controls = control_register.generate_dict(
+            self.custom_controls = ControlRegistryOperations.generate_dict(
                 [dt.ControlRegistryModel(**control) for control in custom_controls],
                 True
             )
         self.are_registries_joined: bool = False
         self.imports_path: str = imports_path
         self.program_name: str = program_name
-        self.controls_registry: list[dt.ControlJsonScheme] = None
+        self.controls_registry: dt.ControlRegistryJsonScheme = dt.ControlRegistryJsonScheme()
         self.code: dt.JsonDict = code_input
         self.routes: set[str] = set()
         self.methods: dt.EventContainer
-        self.controls: dt.ControlMap = dt.ControlMap()
+        self.controls: dt.ControlMap = dt.TypeDict({}, (ft.Control, types.FunctionType, object))
         self.control_bundles: set[str] = set()
-        self.control_awaitable: dict[str, bool] = dict()
-        self.control_settings: dict[str, list[str]] = dict()
-        self.parsed_controls: dt.ParsedControls = dt.ParsedControls()
-        self.parsed_ui: dt.ParsedUserInterface = {}
+        self.control_awaitable: dict[str, bool] = dt.TypeDict({}, bool)
+        self.control_settings: dict[str, list[str]] = dt.TypeDict({}, list)
+        self.parsed_controls: dt.ParsedControls = dt.TypeDict({}, dt.ControlModel)
+        self.parsed_ui: dt.ParsedUserInterface = dt.TypeDict({}, dt.UserInterfaceViews)
     
     def validate_imports(self, file_name: str, data: dt.JsonDict) -> NoReturn:
         keys: list[str]
@@ -97,15 +101,20 @@ class Compiler:
             if key not in VALID_KEYS:
                 raise errors.InvalidMarkupContainerError("ui.json", key)
     
-    def add_constant_controls(self, custom_controls: list[dt.ControlJsonScheme]) -> list[dt.ControlRegistryDictPreview]:
+    def add_constant_controls(self, custom_controls: list[dt.ControlRegisterInterface]) -> list[dt.ControlRegisterInterface]:
         name: str
-        for name in CONSTANT_CONTROLS:
-            custom_controls.append({
-                "name":name,
-                "source":"src.fjml.constant_controls",
-                "attr":name,
-                "is_awaitable":False
-            })
+        for name in constant_controls.CONSTANT_CONTROLS:
+            obj = getattr(constant_controls, name)
+            custom_controls.append(
+                dt.ControlRegisterInterface(
+                    name=name,
+                    source=dt.ObjectSource(
+                        obj, obj.__module__
+                    ),
+                    attr=name,
+                    is_awaitable=False
+                )
+            )
         
         return custom_controls
     
@@ -121,7 +130,6 @@ class Compiler:
                 control = control_scheme["ControlTypes"][
                     control_scheme["Controls"].index(name)
                 ]
-                if control["source"] == "LangSpec":continue
                 self.controls[name] = getattr(
                     import_module(control["source"], None),
                     control["attr"]
@@ -133,15 +141,15 @@ class Compiler:
                 continue
             
             raise ImportError(f"Control named, \"{name}\", is not registered")
-        
-        
     
     def __load_controls(self) -> NoReturn:
         if not self.controls_registry:
-            self.controls_registry = RegistryOperations.load_file()
+            self.controls_registry = RegistryFileOperations.load_file()
         
         if self.custom_controls and not self.are_registries_joined:
-            self.controls_registry = control_register.join_registry(self.controls_registry, self.custom_controls)
+            self.controls_registry = ControlRegistryOperations.join_registry(
+                self.controls_registry, self.custom_controls
+            )
             self.are_registries_joined = True
             
         self.control_loader(self.controls_registry)
@@ -160,7 +168,7 @@ class Compiler:
         self.__parse_ui(self.code["UI"])
         
         return dt.CompiledModel(
-            self.parsed_controls, self.parsed_ui,
+            self.parsed_controls, self.style_sheet, self.parsed_ui,
             self.control_awaitable, self.controls,
             self.routes, self.control_bundles
         )
@@ -205,7 +213,7 @@ class Compiler:
         )
     
     def __parse_controls(self, control_data: list[dt.NamedControlDict]) -> dt.ParsedControls:
-        parsed_data: dt.ParsedControls = dt.ParsedControls()
+        parsed_data: dt.ParsedControls = dt.TypeDict({}, dt.ControlModel)
         var_name: str
         bundle_name: str
         bundles: list[str] = []
@@ -259,7 +267,7 @@ class Compiler:
         
         self.__load_controls()
     
-    def return_build(self, page: ft.Page, methods: dt.EventContainer, UserBuild: Optional[Type[Build]] = None) -> Build:
+    def return_build(self, page: ft.Page, methods: dt.EventContainer, user_build: Optional[Type[Build]] = None) -> Build:
         """
         return_build _summary_
         
@@ -272,10 +280,10 @@ class Compiler:
         compiled_program: dt.CompiledModel = self.compile()
         build: Build
         
-        if not UserBuild:
-            UserBuild = Build
+        if not user_build:
+            user_build = Build
         
-        build = UserBuild(compiled_program, page)
+        build = user_build(compiled_program, page)
         build.initialize()
         
         if methods:
@@ -288,14 +296,11 @@ class Compiler:
 
 def ProgramLoader(params: dt.LoaderParameters) -> Build:
     compiler: Compiler = Compiler(
-        params.program_name, 
-        params.ui_code,
-        params.custom_controls,
-        params.imports_path
+        params.program_name, params.ui_code,
+        params.custom_controls, params.imports_path,
+        params.style_sheet
     )
     
     return compiler.return_build(
-        params.page, 
-        params.methods,
-        params.UserBuild
+        params.page, params.methods, params.UserBuild
     )
