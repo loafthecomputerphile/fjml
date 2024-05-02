@@ -4,43 +4,43 @@ from . import controls
 #from programs.test_compiler.func import Actions
 import flet as ft
 
-custom_data = [
-    {
-        "name":"SheetTable",
-        "source":dt.ObjectSource(
+custom_data: list[dt.ControlRegisterInterface] = [
+    dt.ControlRegisterInterface(
+        name="SheetTable",
+        source=dt.ObjectSource(
             getattr(controls, "SheetTable"),
             "tests.controls"
         ),
-        "attr":"SheetTable",
-        "is_awaitable":False
-    },
-    {
-        "name":"CustomDropdown",
-        "source":dt.ObjectSource(
+        attr="SheetTable",
+        is_awaitable=False
+    ),
+    dt.ControlRegisterInterface(
+        name="CustomDropdown",
+        source=dt.ObjectSource(
             getattr(controls, "CustomDropdown"),
             "tests.controls"
         ),
-        "attr":"CustomDropdown",
-        "is_awaitable":False
-    },
-    {
-        "name":"CustomSwitch",
-        "source":dt.ObjectSource(
+        attr="CustomDropdown",
+        is_awaitable=False
+    ),
+    dt.ControlRegisterInterface(
+        name="CustomSwitch",
+        source=dt.ObjectSource(
             getattr(controls, "CustomSwitch"),
             "tests.controls"
         ),
-        "attr":"CustomSwitch",
-        "is_awaitable":False
-    },
-    {
-        "name":"CustomTextField",
-        "source":dt.ObjectSource(
+        attr="CustomSwitch",
+        is_awaitable=False
+    ),
+    dt.ControlRegisterInterface(
+        name="CustomTextField",
+        source=dt.ObjectSource(
             getattr(controls, "CustomTextField"),
             "tests.controls"
         ),
-        "attr":"CustomTextField",
-        "is_awaitable":False
-    }
+        attr="CustomTextField",
+        is_awaitable=False
+    )
 ]
 
 
@@ -56,10 +56,11 @@ async def main(page: ft.Page):
         dt.LoaderParameters(
             page=page,
             program_name="test_compiler_graph",
-            imports_path="tests\\programs\\excel_to_word\\extra",
-            custom_controls=custom_data,
-            methods=Actions,
-            ui_code="tests\\programs\\excel_to_word\\ui.json"
+            program_path="tests\\programs\\excel_to_word",
+            import_folder_name="extra",
+            method_file_name="func",
+            method_class_name="Actions",
+            custom_controls=custom_data
         )
     )
     '''

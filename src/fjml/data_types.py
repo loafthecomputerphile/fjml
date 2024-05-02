@@ -1,5 +1,6 @@
 from __future__ import annotations
 import io
+import os.path
 from dataclasses import dataclass, field
 import json
 from abc import ABC, abstractmethod
@@ -7,8 +8,9 @@ from typing import (
     Any, TypedDict,
     Union, TypeAlias,
     Protocol, Iterable,
-    NoReturn
+    NoReturn, Optional
 )
+import types
 import inspect
 from enum import Enum
 
@@ -26,10 +28,10 @@ __all__ = [
     "RefDict", "ControlDict", "UserInterfaceViews",
     "RouteDict", "RouteView", "ImportDict",
     "UserInterfaceDict", "ParsedUserInterface", "LoopDict",
-    "LoopItem", "ControlRegistryDictPreview", "EventContainer",
+    "LoopItem", "ControlRegisterInterface", "EventContainer",
     "FunctionModel", "ControlContainer", "LoaderParameters",
     "ControlBundle", "ControlRegistryModel", "TypeDict",
-    "ObjectSource"
+    "ObjectSource", "CallableObject", "StyleSheet"
 ]
 
 class TypedList(list):
@@ -94,7 +96,7 @@ class EventContainer(ABC):
         ...
 
 
-class ControlRegistryDictPreview(TypedDict):
+class ControlRegisterInterface(TypedDict):
     name: str
     source: str
     attr: str
@@ -197,8 +199,24 @@ ParsedControls: TypeAlias = dict[str, ControlModel]
 
 
 @dataclass
+class StyleSheet:
+    data: JsonDict = field(default_factory=JsonDict)
+    
+    def get_style(self, *args) -> JsonDict:
+        key: str
+        end_style: JsonDict
+        for key in args:
+            if not end_style:
+                end_style = self.data[key]
+            else:
+                end_style = end_style[key]
+        return end_style
+
+
+@dataclass
 class CompiledModel:
     controls: ParsedControls = field(default_factory=ParsedControls)
+    style_sheet: StyleSheet = field(default_factory=StyleSheet)
     ui: list[UserInterfaceViews] = field(default_factory=list)
     control_awaitable: dict[str, bool] = field(default_factory=dict)
     control_map: ControlMap = field(default_factory=ControlMap)
@@ -210,23 +228,67 @@ class CompiledModel:
 class LoaderParameters:
     page: ft.Page
     program_name: str
-    ui_code: str
-    imports_path: str
-    methods: Union[EventContainer, None] = field(default=None)
+    program_path: str
+    import_folder_name: str
+    method_file_name: str
+    method_class_name: str
+    style_sheet_name: str = "style"
     custom_controls: list[ControlJsonScheme] = field(default_factory=list)
     UserBuild: Optional[Type["Build"]] = field(default=None)
     
     def __post_init__(self) -> NoReturn:
         file: io.TextIOWrapper
+        self.style_sheet = {}
         
-        if not isinstance(self.ui_code, str):
-            return
+        ui_code_path: str = os.path.join(self.program_path, "ui.json")
+        if not os.path.exists(ui_code_path):
+            raise FileNotFoundError(f"File, \"ui.json\" in path \"{self.program_path}\" does not exist")
+
+        self.imports_path: Optional[str] = None if not self.import_folder_name else os.path.join(self.program_path, self.import_folder_name)
+        if not self.imports_path:
+            pass
+        elif not os.path.exists(self.imports_path):
+            raise FileNotFoundError(f"Folder, \"{self.import_folder_name}\" in path \"{self.program_path}\" does not exist")
         
-        if self.ui_code[-7:] != "ui.json":
-            raise Exception("ui_code file must be named \"ui.json\"")
+        method_path: str = os.path.join(self.program_path, f"{self.method_file_name}.py")
+        if not os.path.exists(method_path):
+            raise FileNotFoundError(f"File, \"{self.method_file_name}.py\" in path \"{self.program_path}\" does not exist")
+
+        style_sheet_path: str = os.path.join(self.program_path, f"{self.style_sheet_name}.json")
+        if os.path.exists(style_sheet_path):
+            with open(style_sheet_path, "r") as file:
+                self.style_sheet = json.load(file)
         
-        with open(self.ui_code, "r") as file:
+        method_path = method_path.replace("\\", ".")
+        method_path = method_path.replace("/", ".")
+        
+        import_data: types.ModuleType = utils.import_module(method_path[:-3])
+        
+        self.methods: EventContainer = getattr(import_data, self.method_class_name)
+        if not inspect.isclass(self.methods):
+            raise TypeError()
+        if not issubclass(self.methods, EventContainer):
+            raise TypeError()
+        
+        with open(ui_code_path, "r") as file:
             self.ui_code = json.load(file)
+
+def check_invalid_args(valid_args: list[str], data: str) -> str:
+    if data not in iterator:
+        return data
+
+@dataclass
+class CallableObject:
+    obj: Callable[[...], Any] = field(default=None)
+    name: str = field(default="")
+    valid_args: list[str] = field(default_factory=list)
+    
+    def __call__(self, **kwargs) -> Any:
+        for key in kwargs.keys():
+            res = check_invalid_args(self.valid_args, key)
+            if not res: continue
+            raise TypeError(f"{self.name}() got unexpected keyword argument '{res}'")
+        return self.obj(**kwargs)
 
 @dataclass
 class ObjectSource:

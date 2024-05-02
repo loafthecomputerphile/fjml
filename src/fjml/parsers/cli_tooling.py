@@ -42,13 +42,13 @@ invalid_sources: list[str] = [
 
 def update_register() -> NoReturn:
     added_names: list[str] = []
-    populous: list[dt.ControlJsonScheme] = []
+    populous: list[dt.ControlRegisterInterface] = []
     #other_controls_registry.others
     for name, obj in inspect.getmembers(ft):
         if inspect.isclass(obj) and name not in added_names:
             obj_source = dt.ObjectSource(obj, "flet")
             populous.append(
-                dt.ControlJsonScheme(
+                dt.ControlRegisterInterface(
                     name=name,
                     source=obj_source,
                     attr=name,
@@ -66,7 +66,7 @@ def update_register() -> NoReturn:
                     obj_source = dt.ObjectSource(obj1, obj1.__module__)
                     if inspect.isclass(obj1) and name1 not in added_names:
                         populous.append(
-                            dt.ControlJsonScheme(
+                            dt.ControlRegisterInterface(
                                 name=name1,
                                 source=obj_source,
                                 attr=name1,
@@ -76,7 +76,7 @@ def update_register() -> NoReturn:
                         added_names.append(name1)
                     elif inspect.isfunction(obj1) and f"{name}.{name1}" not in added_names:
                         populous.append(
-                            dt.ControlJsonScheme(
+                            dt.ControlRegisterInterface(
                                 name=f"{name}.{name1}",
                                 source=obj_source,
                                 attr=name1,
@@ -86,7 +86,7 @@ def update_register() -> NoReturn:
                         added_names.append(f"{name}.{name1}")
                     elif type(obj1) != type and f"{name}.{name1}" not in added_names and not callable(obj1):
                         populous.append(
-                            dt.ControlJsonScheme(
+                            dt.ControlRegisterInterface(
                                 name=f"{name}.{name1}",
                                 source=obj_source,
                                 attr=name1,
@@ -99,7 +99,7 @@ def update_register() -> NoReturn:
         if inspect.isclass(obj) and name not in added_names:
             obj_source = dt.ObjectSource(obj, "flet.canvas")
             populous.append(
-                dt.ControlJsonScheme(
+                dt.ControlRegisterInterface(
                     name=name,
                     source=obj_source,
                     attr=name,
@@ -109,7 +109,7 @@ def update_register() -> NoReturn:
             added_names.append(name)
 
     populous.extend([
-        dt.ControlJsonScheme(
+        dt.ControlRegisterInterface(
             name="MatplotlibChart",
             source=dt.ObjectSource(
                 MatplotlibChart, 
@@ -118,7 +118,7 @@ def update_register() -> NoReturn:
             attr="MatplotlibChart",
             is_awaitable=False
         ),
-        dt.ControlJsonScheme(
+        dt.ControlRegisterInterface(
             name="PlotlyChart",
             source=dt.ObjectSource(
                 PlotlyChart, 
