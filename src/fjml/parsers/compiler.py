@@ -1,164 +1,214 @@
-import asyncio
-import json
-import io
-from typing import (
-    Any, 
-    Optional, 
-    Union,
-    Type,
-    Final,
-    NoReturn
+import io, os, json, time, inspect
+from typing import(
+    Any, Union, 
+    Final, Callable, 
+    Sequence, Mapping, 
+    Generator, Type, 
+    TypeAlias
 )
-import types
+from functools import wraps
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
 import flet as ft
-
-
-from .. import constant_controls
-
-from .builder import Build
+from .builder import Backend
 from .control_register import ControlRegistryOperations
-from ..constants import CONTROL_REGISTRY_PATH
-from .. import data_types as dt
-from .. import error_types as errors
-from ..utils import Utilities, import_module, RegistryFileOperations
+from ..utils import Utilities, import_module
+from .. import (
+    data_types as dt, 
+    error_types as errors, 
+    operation_classes as opc,
+    constant_controls,
+    constants,
+    utils,
+    checks
+)
+
+
+def timeit(func: Callable) -> Callable:
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs) -> Any:
+        start_time: float = time.perf_counter()
+        result: Any = func(*args, **kwargs)
+        end_time: float = time.perf_counter()
+        print(f"Took {(end_time - start_time):.4f} seconds")
+        return result
+
+    return timeit_wrapper
+
 
 Tools: Utilities = Utilities()
-
-VALID_KEYS: Final[list[str]] = ["UI", "Imports", "Controls"]
-MARKUP_SPECIFIC_CONTROLS: Final[list[str]] = [
-    "loop", "ref", "loop_index"
-]
+CompileHandler: utils.CompiledFileHandler = utils.CompiledFileHandler()
+VALID_KEYS: Final[Sequence[str]] = ["UI", "Imports", "Controls", "Header"]
+MarkupType: TypeAlias = Union[Sequence[dt.JsonDict], dt.JsonDict]
 
 class Compiler:
-    
-    __slots__ = (
-        "control_settings", "control_registry_path", "code", 
-        "controls", "parsed_controls", "parsed_ui",
-        "control_awaitable", "program_name", "program", 
-        "used_controls", "routes", "custom_controls",
-        "control_bundles", "methods", "imports_path", "controls_registry",
-        "are_registries_joined", "style_sheet"
-    )
-    
-    def __init__(
-        self, program_name: str, code_input: dict[str, Any], 
-        custom_controls: list[dt.ControlRegisterInterface] = [], imports_path: str = "",
-        style_sheet: dt.JsonDict = {}
-    ) -> NoReturn:
-        """
-        __init__ _summary_
 
-        Args:
-            program_name (str): _description_
-        """
+    __slots__ = (
+        "control_settings",
+        "control_registry_path",
+        "code",
+        "controls",
+        "parsed_controls",
+        "parsed_ui",
+        "control_awaitable",
+        "program_name",
+        "program",
+        "used_controls",
+        "routes",
+        "custom_controls",
+        "control_bundles",
+        "methods",
+        "imports_path",
+        "controls_registry",
+        "are_registries_joined",
+        "style_sheet",
+        "dependent_refs",
+        "params",
+        "control_param_types"
+    )
+
+    def __init__(self, params: dt.ParamGenerator) -> NoReturn:
+        self.params: dt.ParamGenerator = params
+        params.parse_extentions(
+            inspect.currentframe().f_back.f_globals
+        )
         self.used_controls: set[str] = set()
-        self.style_sheet: dt.StyleSheet = dt.StyleSheet(style_sheet)
-        self.update_used_controls(self.style_sheet.data)
-        custom_controls = self.add_constant_controls(custom_controls)
+        self.style_sheet: opc.StyleSheet
         self.custom_controls: dt.ControlRegistryJsonScheme
+        self.dependent_refs: opc.ControlDependencies = opc.ControlDependencies()
+        self.are_registries_joined: bool = False
+        self.imports_path: str = self.params.imports_path
+        self.program_name: str = self.params.program_name
+        self.controls_registry: dt.ControlRegistryJsonScheme = (
+            dt.ControlRegistryJsonScheme()
+        )
+        self.code: dt.JsonDict = self.params.ui_code
+        self.routes: set[str] = set()
+        self.methods: Type[dt.EventContainer]
+        self.controls: dt.ControlMap = dt.ControlMap()
+        self.control_param_types: Mapping[str, dt.TypeHints] = {}
+        self.control_awaitable: Mapping[str, bool] = {}
+        self.control_settings: Mapping[str, Sequence[str]] = {}
+        self.parsed_controls: dt.ParsedControls = {}
+        self.parsed_ui: dt.ParsedUserInterface = {}
+        self.setup()
+    
+    
+    def setup(self) -> NoReturn:
+        self.style_sheet = opc.StyleSheet(self.params.style_sheet)
+        custom_controls: Sequence[dt.ControlRegisterInterface] = self.add_constant_controls(
+            self.parse_custom_controls(self.params.custom_controls)
+        )
         if custom_controls:
             self.custom_controls = ControlRegistryOperations.generate_dict(
-                [dt.ControlRegistryModel(**control) for control in custom_controls],
-                True
+                [dt.ControlRegistryModel(**control) for control in custom_controls]
             )
-        self.are_registries_joined: bool = False
-        self.imports_path: str = imports_path
-        self.program_name: str = program_name
-        self.controls_registry: dt.ControlRegistryJsonScheme = dt.ControlRegistryJsonScheme()
-        self.code: dt.JsonDict = code_input
-        self.routes: set[str] = set()
-        self.methods: dt.EventContainer
-        self.controls: dt.ControlMap = dt.TypeDict({}, (ft.Control, types.FunctionType, object))
-        self.control_bundles: set[str] = set()
-        self.control_awaitable: dict[str, bool] = dt.TypeDict({}, bool)
-        self.control_settings: dict[str, list[str]] = dt.TypeDict({}, list)
-        self.parsed_controls: dt.ParsedControls = dt.TypeDict({}, dt.ControlModel)
-        self.parsed_ui: dt.ParsedUserInterface = dt.TypeDict({}, dt.UserInterfaceViews)
     
-    def validate_imports(self, file_name: str, data: dt.JsonDict) -> NoReturn:
-        keys: list[str]
+    def parse_custom_controls(self, data: Sequence[Union[dt.ThirdPartyExtention, dt.UIImports]]) -> Sequence[dt.ControlRegisterInterface]:
+        value: Union[dt.ThirdPartyExtention, dt.UIImports]
+        result: Sequence[dt.ControlRegisterInterface] = []
         
+        for value in enumerate(data):
+            if isinstance(value, (dt.ThirdPartyExtention, dt.UIImports)):
+                result.extend(value.extensions)
+            
+        return result
+
+    def validate_imports(self, file_name: str, data: dt.JsonDict) -> NoReturn:
+        keys: Sequence[str]
+
         if data.get("Controls", None) == None:
             raise errors.InvalidMarkupFormatError(file_name, "Controls")
         keys = list(data.keys())
-        
+
         try:
             keys.remove("Controls")
         except:
             pass
-        
+
         if len(keys) == 0: return
+        
         raise errors.InvalidMarkupContainerError(file_name, keys[0])
-    
+
     def validate_main_file(self) -> NoReturn:
         key: str
-        
+
         for key in VALID_KEYS:
             if self.code.get(key, None) == None:
                 raise errors.InvalidMarkupFormatError("ui.json", key)
-        
+
         for key in self.code.keys():
             if key not in VALID_KEYS:
                 raise errors.InvalidMarkupContainerError("ui.json", key)
-    
-    def add_constant_controls(self, custom_controls: list[dt.ControlRegisterInterface]) -> list[dt.ControlRegisterInterface]:
+
+    def add_constant_controls(
+        self, custom_controls: Sequence[dt.ControlRegisterInterface]
+    ) -> Sequence[dt.ControlRegisterInterface]:
         name: str
+        
         for name in constant_controls.CONSTANT_CONTROLS:
-            obj = getattr(constant_controls, name)
             custom_controls.append(
                 dt.ControlRegisterInterface(
                     name=name,
                     source=dt.ObjectSource(
-                        obj, obj.__module__
+                        getattr(constant_controls, name)
                     ),
                     attr=name,
-                    is_awaitable=False
+                    control=None
                 )
             )
         
         return custom_controls
-    
+
     def control_loader(self, control_scheme: dt.ControlRegistryJsonScheme) -> NoReturn:
         name: str
         control: dt.ControlJsonScheme
         control_keys: set[str] = set(self.controls.keys())
-        
+
         for name in self.used_controls:
-            if name in control_keys or name in MARKUP_SPECIFIC_CONTROLS: 
-                continue
-            if name in control_scheme["Controls"]:
-                control = control_scheme["ControlTypes"][
-                    control_scheme["Controls"].index(name)
-                ]
-                self.controls[name] = getattr(
-                    import_module(control["source"], None),
-                    control["attr"]
-                )
-                
-                control_keys.add(name)
-                self.control_awaitable[name] = control["awaitable"]
-                self.control_settings[name] = control["valid_settings"]
+            if name in control_keys or name in constants.MARKUP_SPECIFIC_CONTROLS:
                 continue
             
-            raise ImportError(f"Control named, \"{name}\", is not registered")
-    
+            if name not in control_scheme["Controls"]:
+                continue
+
+            control = control_scheme["ControlTypes"][
+                control_scheme["Controls"].index(name)
+            ]
+            
+            control_keys.add(name)
+            self.controls[name] = getattr(
+                import_module(control["source"], None), 
+                control["attr"]
+            )
+            
+            self.control_param_types[name] = utils.TypeHintSerializer.deserialize(
+                control["type_hints"]
+            )
+            self.control_settings[name] = control["valid_settings"]
+
     def __load_controls(self) -> NoReturn:
         if not self.controls_registry:
-            self.controls_registry = RegistryFileOperations.load_file()
-        
+            self.controls_registry = utils.RegistryFileOperations.load_file()
+
         if self.custom_controls and not self.are_registries_joined:
             self.controls_registry = ControlRegistryOperations.join_registry(
                 self.controls_registry, self.custom_controls
             )
             self.are_registries_joined = True
-            
+
         self.control_loader(self.controls_registry)
-    
+
     def __load_program(self) -> NoReturn:
         self.__load_controls()
-        self.update_used_controls(self.code)
         self.__parse_imports()
-    
+        self.update_used_controls(self.style_sheet.data)
+        self.update_used_controls(self.code)
+
     def compile(self) -> dt.CompiledModel:
         self.__load_program()
         self.parsed_controls.update(
@@ -167,140 +217,133 @@ class Compiler:
         self.validate_main_file()
         self.__parse_ui(self.code["UI"])
         
-        return dt.CompiledModel(
-            self.parsed_controls, self.style_sheet, self.parsed_ui,
-            self.control_awaitable, self.controls,
-            self.routes, self.control_bundles
-        )
-    
-    def __parse_imports(self) -> NoReturn:
-        import_data: list[dt.ImportDict] = self.code.get("Imports", None)
-        data: dt.JsonDict
-        program: io.TextIOWrapper
-        source: str
-        file: list[dt.NamedControlDict]
-        jsondata: list[list[dt.NamedControlDict]] = []
+        self.dependent_refs.update_cache()
         
+        model: dt.CompiledModel = dt.CompiledModel(
+            self.parsed_controls, self.style_sheet,
+            self.parsed_ui, self.controls,
+            self.routes, self.control_settings, self.dependent_refs,
+            self.control_param_types, self.params.program_name
+        )
+        
+        self.params.save_program(model)
+    
+    def load_file(self, source: str) -> Sequence[dt.NamedControlDict]:
+        program: io.TextIOWrapper
+        file: Sequence[dt.NamedControlDict]
+        path: str = f"{self.imports_path}\\{source}"
+        
+        if not os.path.exists(path):
+            return []
+        
+        with open(path, "r") as program:
+            file = json.load(program)
+            self.validate_imports(source, file)
+            self.update_used_controls(file["Controls"])
+            return file["Controls"]
+            
+        return []
+
+    def __parse_imports(self) -> NoReturn:
+        import_data: Sequence[dt.ImportDict] = self.code.get("Imports", None)
+        data: dt.JsonDict
+        source: str
+        paths: Sequence[str] = []
+        jsondata: Sequence[Sequence[dt.NamedControlDict]] = []
+
         if not import_data:
             self.__load_controls()
             return
-        
+
         for data in import_data:
-            name = data.get("source")
-            source = f"{name}.json"
-            with open(f"{self.imports_path}/{source}", 'r') as program:
-                file = json.load(program)
-                self.validate_imports(source, file)
-                self.update_used_controls(file["Controls"])
-                jsondata.append(file["Controls"])
+            source = data.get('source', "")
+            if not source:
                 continue
-            raise FileNotFoundError(f"File at path, \"{self.imports_path}\{source}.json\" does not exist")
-        
+            if utils.is_sequence_not_str(source):
+                if not data.get("from", None):
+                    continue
+                for i in source:
+                    paths.append(f"{data['from']}\\{i}.json")
+            else:
+                paths.append(f"{source}.json")
+                
+        for path in paths:
+            data = self.load_file(path)
+            if not data:
+                continue
+            jsondata.append(data)
+
         self.__load_controls()
         if not jsondata:
             return
-            
+
         for data in jsondata:
-            self.parsed_controls.update(
-                self.__parse_controls(data)
-            )
-    
-    def update_used_controls(self, data: Union[list[dt.JsonDict], dt.JsonDict]) -> NoReturn:
+            self.parsed_controls.update(self.__parse_controls(data))
+
+    def update_used_controls(self, data: MarkupType) -> NoReturn:
         self.used_controls.update(
-            Tools.find_values(
-                data, "control_type"
-            )
+            Tools.find_values(data, "control_type", constants.MARKUP_SPECIFIC_CONTROLS)
         )
-    
-    def __parse_controls(self, control_data: list[dt.NamedControlDict]) -> dt.ParsedControls:
-        parsed_data: dt.ParsedControls = dt.TypeDict({}, dt.ControlModel)
-        var_name: str
-        bundle_name: str
-        bundles: list[str] = []
-        control_type: str
+
+    def __parse_controls(
+        self, controls: Sequence[dt.NamedControlDict]
+    ) -> dt.ParsedControls:
+        parsed_data: dt.ParsedControls = {}
         data: dt.NamedControlDict
-        
-        
-        for data in control_data:
-            var_name = data["var_name"]
-            control_type = data["control_type"]
-            settings = data.get("settings", {})
-            
-            if control_type == "ref":
-                parsed_data[var_name] = dt.ControlModel(
-                    name=var_name,
-                    control_name=control_type,
-                    settings=settings
-                )
-                continue
-            
-            bundle_name = data.get("bundle_name", "")
-            parsed_data[var_name] = dt.ControlModel(
-                name=var_name,
-                bundle_name=bundle_name,
-                control_name=control_type,
-                control=self.controls[control_type],
-                settings=settings,
-                valid_settings=self.control_settings[control_type]
+
+        for data in self.parse_iterator(controls, checks.NamedControlCheck):
+            self.dependent_refs.add_dependencies(
+                data["var_name"], data.get("settings", {})
             )
-            
-            if bundle_name:
-                bundles.append(bundle_name)
-            
-        self.control_bundles.update(bundles)
+            parsed_data[data["var_name"]] = self.make_control_model(
+                data
+            )
+
         return parsed_data
     
-    def __parse_ui(self, ui_data: list[dt.RouteDict]) -> NoReturn:
+    def make_control_model(self, data: dt.NamedControlDict) -> dt.ControlModel:
+        return dt.ControlModel(
+            name=data["var_name"],
+            control_name=data["control_type"],
+            control=self.controls[data["control_type"]],
+            settings=data.get("settings", {}),
+            valid_settings=self.control_settings[
+                data["control_type"]
+            ]
+        )
+
+    def __parse_ui(self, ui_data: Sequence[dt.RouteDict]) -> NoReturn:
         route_dict: dt.RouteDict
-        route: str
-        settings: dt.ControlSettings
-        
-        for route_dict in ui_data:
-            route = route_dict["route"]
-            settings = route_dict["settings"]
-            
-            self.routes.add(route)
-            self.parsed_ui[route] = dt.UserInterfaceViews(
-                route,
-                settings
+        data: tuple[str, dt.JsonDict]
+
+        for route_dict in self.parse_iterator(ui_data, checks.RouteCheck):
+            self.routes.add(route_dict["route"])
+            self.dependent_refs.add_dependencies(
+                route_dict["route"], route_dict["settings"]
             )
-        
+            self.parsed_ui[route_dict["route"]] = dt.UIViews(**route_dict)
+
         self.__load_controls()
     
-    def return_build(self, page: ft.Page, methods: dt.EventContainer, user_build: Optional[Type[Build]] = None) -> Build:
-        """
-        return_build _summary_
+    def parse_iterator(self, data: Sequence[Mapping], checker: type[checks.Checker]) -> Generator[Mapping, None, None]:
+        value: Mapping
+        res: Union[Mapping, None]
         
-        Args:
-            UserBuild (Optional[Build], optional): _description_. Defaults to None.
-        
-        Returns:
-            Build: _description_
-        """
-        compiled_program: dt.CompiledModel = self.compile()
-        build: Build
-        
-        if not user_build:
-            user_build = Build
-        
-        build = user_build(compiled_program, page)
-        build.initialize()
-        
-        if methods:
-            build.add_methods(methods)
-        
-        build.run_setup()
-        return build
+        for value in data:
+            res = checker.correct(value, self)
+            if not res: continue
+            del res["<SKIP>"]
+            yield res
 
 
-
-def ProgramLoader(params: dt.LoaderParameters) -> Build:
-    compiler: Compiler = Compiler(
-        params.program_name, params.ui_code,
-        params.custom_controls, params.imports_path,
-        params.style_sheet
+@timeit
+def load_program(compiled_program_path: str, methods: Type[dt.EventContainer], page: ft.Page) -> ft.Page:
+    backend: Backend = Backend(
+        CompileHandler.load(
+            compiled_program_path
+        ), 
+        page
     )
     
-    return compiler.return_build(
-        params.page, params.methods, params.UserBuild
-    )
+    return backend.initialize(methods)
+

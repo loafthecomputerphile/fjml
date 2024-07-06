@@ -1,88 +1,31 @@
-from src.fjml import Build, ProgramLoader, data_types as dt
-from .programs.excel_to_word.func import Actions
-from . import controls
-#from programs.test_compiler.func import Actions
+from src.fjml import load_program, Compiler, data_types as dt
+from .controls import test_controls as tc
+from .ui_test_program.func import Actions
+import enum
 import flet as ft
 
-custom_data: list[dt.ControlRegisterInterface] = [
-    dt.ControlRegisterInterface(
-        name="SheetTable",
-        source=dt.ObjectSource(
-            getattr(controls, "SheetTable"),
-            "tests.controls"
-        ),
-        attr="SheetTable",
-        is_awaitable=False
-    ),
-    dt.ControlRegisterInterface(
-        name="CustomDropdown",
-        source=dt.ObjectSource(
-            getattr(controls, "CustomDropdown"),
-            "tests.controls"
-        ),
-        attr="CustomDropdown",
-        is_awaitable=False
-    ),
-    dt.ControlRegisterInterface(
-        name="CustomSwitch",
-        source=dt.ObjectSource(
-            getattr(controls, "CustomSwitch"),
-            "tests.controls"
-        ),
-        attr="CustomSwitch",
-        is_awaitable=False
-    ),
-    dt.ControlRegisterInterface(
-        name="CustomTextField",
-        source=dt.ObjectSource(
-            getattr(controls, "CustomTextField"),
-            "tests.controls"
-        ),
-        attr="CustomTextField",
-        is_awaitable=False
-    )
-]
+
+class Paths(enum.StrEnum):
+    PROGRAM: str = "tests\\ui_test_program"
+    COMPILED: str = "tests\\ui_test_program\\compiled.fjml"
 
 
-
-async def main(page: ft.Page):
-    page.theme_mode = controls.ThemeSettings.MODE
-    page.bgcolor = ft.colors.GREY_50
-    page.title = "Development Program"
-    page.horizontal_alignment = "center"
-    page.fonts = controls.ThemeSettings.FONTS
-    page.theme = controls.ThemeSettings.THEME
-    build: Build = ProgramLoader(
-        dt.LoaderParameters(
-            page=page,
-            program_name="test_compiler_graph",
-            program_path="tests\\programs\\excel_to_word",
-            import_folder_name="extra",
-            method_file_name="func",
-            method_class_name="Actions",
-            custom_controls=custom_data
-        )
-    )
-    '''
-    build: Build = ProgramLoader(
-        LoaderParameters(
-            page=page,
-            program_name="excel_to_word",
-            imports_path="programs\\excel_to_word\\extra",
-            custom_controls=custom_data,
-            methods=Actions,
-            ui_code="programs\\excel_to_word\\ui.json"
-        )
-    )
-    '''
-    def view_pop(view):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
+class App:
     
-    page.on_view_pop = view_pop
-    
-    page.go("/")
+    def __init__(self, run_compiler: bool = False) -> None:
+        compiler: Compiler
+        
+        if run_compiler:
+            compiler = Compiler(
+                dt.ParamGenerator(Paths.PROGRAM, Paths.COMPILED)
+            )
+            compiler.compile()
+        
+    async def run(self, page: ft.Page):
+        page = load_program(Paths.COMPILED, Actions, page)
+        page.go("/")
+
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    app: App = App()
+    ft.app(target=app.run)
