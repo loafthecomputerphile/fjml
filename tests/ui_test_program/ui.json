@@ -1,0 +1,50 @@
+{
+    "Header":{
+        "import_folder":"extra",
+        "program_name":"UI Test",
+        "style_sheet_name":"style_sheet",
+        "extentions":[
+            {
+                "import":["RouteBtn", "TestContainer"], 
+                "from":".controls.test_controls"
+            }
+        ]
+    },
+    "Imports":[
+        {"source":"loop_tests"},
+        {"source":"route_test"},
+        {"source":["const", "const_1"], "from":"custom_controls"},
+        {"source":"refs_tests"}
+    ],
+    "Controls":[],
+    "UI":[
+        {
+            "route":"/",
+            "settings":{
+                "scroll":"auto",
+                "controls":[
+                    {"refs":"jenskjd"},
+                    {"refs":"loop_test_display"},
+                    {"refs":"refs_test_display"},
+                    {
+                        "control_type":"Row",
+                        "settings":{
+                            "controls":[
+                                {"refs":"route_test_btn"}
+                            ],
+                            "unpack":{"styling":"row_center"}
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "route":"/route_test",
+            "settings":{
+                "controls":[
+                    {"refs":"route_test_success_display"}
+                ]
+            }
+        }
+    ]
+}
