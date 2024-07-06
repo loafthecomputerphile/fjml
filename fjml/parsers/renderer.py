@@ -10,7 +10,8 @@ from typing import (
     Mapping,
     Generator,
     TypeAlias,
-    TYPE_CHECKING
+    TYPE_CHECKING,
+    TypeVar
 )
 
 import flet as ft
@@ -40,7 +41,6 @@ class Renderer:
     __slots__ = (
         "backend", "update", "get_attr",
         "set_attr", "has_attr", "change_route",
-        "property_bucket", "object_bucket", "style_sheet",
         "control_loader", "tools", "page", "references", "eparser",
         "use_bucket", "type_check", "get_ref",
         "control_names", "depth_count", "__loop_depth",
@@ -54,12 +54,9 @@ class Renderer:
         self.__loop_depth: int = None
         self.__loop_values: Sequence = None
         self.backend: Backend = backend
-        self.get_attr: Callable[[str, Any], Any] = self.backend.get_attr
-        self.set_attr: Callable[[str, Any], NoReturn] = self.backend.set_attr
-        self.has_attr: Callable[[str], bool] = self.backend.has_attr
-        self.property_bucket: opc.PropertyContainer = self.backend.property_bucket
-        self.object_bucket: opc.ObjectContainer = self.backend.object_bucket
-        self.style_sheet: opc.StyleSheet = self.backend.style_sheet
+        self.get_attr: Callable[[Backend, str, Any], Any] = self.backend.get_attr
+        self.set_attr: Callable[[Backend, str, Any], NoReturn] = self.backend.set_attr
+        self.has_attr: Callable[[Backend, str], bool] = self.backend.has_attr
         self.control_loader: opc.ControlLoader = opc.ControlLoader(self.backend)
         self.tools: utils.Utilities = self.backend.tools
         self.get_ref: Callable[[Mapping], Any] = opc.Reference(self).get_ref
@@ -68,6 +65,18 @@ class Renderer:
         self.control_names: Sequence[str] = []
         self.unpack_function = opc.Unpacker(self).unpack
         self.type_check = opc.TypeCheck.type_rectification
+    
+    @property
+    def property_bucket(self) -> opc.PropertyContainer:
+        return self.backend.property_bucket
+    
+    @property
+    def object_bucket(self) -> opc.ObjectContainer:
+        return self.backend.object_bucket
+    
+    @property
+    def style_sheet(self) -> opc.StyleSheet:
+        return self.backend.style_sheet
     
     @property
     def compiled_program(self) -> dt.CompiledModel:

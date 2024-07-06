@@ -1,6 +1,6 @@
 import flet as ft
 from typing import NoReturn, Awaitable, Coroutine
-from src.fjml import data_types as dt
+from fjml import data_types as dt
 from ..controls import ThemeSettings
 
 
