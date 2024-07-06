@@ -118,7 +118,7 @@ class Actions(dt.EventContainer):
     if __name__ == "__main__":
         app: App = App(compile=True)
         ft.app(target=app.run)
-    ```
+```
 
 
 ## Python Integration
