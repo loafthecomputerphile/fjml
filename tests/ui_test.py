@@ -1,4 +1,4 @@
-from src.fjml import load_program, Compiler, data_types as dt
+from fjml import load_program, Compiler, data_types as dt
 from .controls import test_controls as tc
 from .ui_test_program.func import Actions
 import enum

@@ -1,12 +1,6 @@
 [build-system]
-
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
-dependencies = [
-  "flet>=0.22.0",
-  "nest_asyncio>=1.5.9",
-  "typing_extensions>=4.11.0"
-]
 
 [project]
 name = "fjml"
@@ -23,6 +17,14 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+  "flet>=0.22.0",
+  "nest_asyncio>=1.5.9",
+  "typing_extensions>=4.11.0"
+]
+
+[project.scripts]
+fjml = "fjml.cli_tooling:main"
 
 [project.urls]
 Homepage = "https://github.com/pypa/sampleproject"
