@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Sequence, Any, Mapping, TYPE_CHECKING
+from typing import Sequence, Any, Mapping, TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from . import data_types as dt
 
@@ -13,12 +13,15 @@ class Checker:
     
     @classmethod
     def correct(self, data: JsonDict, cls: Any = None) -> Mapping:
-        ...
+        self.data = data.items()
+        return self.validate_dict()
     
     @classmethod
     def validate_dict(self) -> Mapping:
+        key: str
+        value: Any
         result: Mapping = {"<SKIP>":False}
-        count = 0
+
         for key, value in self.data:
             if key not in self.names:
                 continue
@@ -34,13 +37,12 @@ class Checker:
 
 class ControlCheck(Checker):
     names = ["control_type", "settings"]
-    dtypes = {"control_type":str, "settings":Mapping}
+    dtypes = {"control_type":str, "settings":dict}
     optional = ["settings"]
     
     @classmethod
-    def correct(self, data: JsonDict, cls: Any = None) -> Mapping:
-        self.data = data.items()
-        res = self.validate_dict()
+    def correct(self, data: JsonDict, cls: Any = None) -> Union[Mapping, None]:
+        res: Mapping = super().correct(data, cls)
         if res["<SKIP>"]:
             return
         if data["control_type"] not in cls.controls_registry["Controls"]:
@@ -51,13 +53,12 @@ class ControlCheck(Checker):
 
 class NamedControlCheck(Checker):
     names = ["var_name", "control_type", "settings"]
-    dtypes = {"var_name":str, "control_type":str, "settings":Mapping}
+    dtypes = {"var_name":str, "control_type":str, "settings":dict}
     optional = ["settings"]
     
     @classmethod
-    def correct(self, data: JsonDict, cls: Any = None) -> Mapping:
-        self.data = data.items()
-        res = self.validate_dict()
+    def correct(self, data: JsonDict, cls: Any = None) -> Union[Mapping, None]:
+        res: Mapping = super().correct(data, cls)
         if res["<SKIP>"]:
             return
         if data["control_type"] not in cls.controls_registry["Controls"]:
@@ -72,9 +73,8 @@ class RouteCheck(Checker):
     optional = ["settings"]
     
     @classmethod
-    def correct(self, data: JsonDict, cls: Any = None) -> Mapping:
-        self.data = data.items()
-        res = self.validate_dict()
+    def correct(self, data: JsonDict, cls: Any = None) -> Union[Mapping, None]:
+        res: Mapping = super().correct(data, cls)
         if res["<SKIP>"]:
             return
         return res

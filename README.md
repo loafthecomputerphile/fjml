@@ -6,7 +6,7 @@
 
 # Example:
 
-```json
+```json title="ui.json"
 {
     "Header":{
         "program_name":"Example"
@@ -58,7 +58,7 @@
 ```
 
 
-```python
+```python title="func.py"
 from fjml import data_types as dt
 import flet as ft
 
@@ -71,47 +71,44 @@ class Colors:
 class Actions(dt.EventContainer):
 
     def _page_setup(self):
-        '''
-        a custom page setup function if needed before rendering the UI and adding it to the page
-        '''
+        ...
     
     def _imports(self):
         self.colors: Colors = Colors()
         self.cross_align: str = ft.CrossAxisAlignment.CENTER
         self.main_align: str = ft.MainAxisAlignment.CENTER
 
-    #you can then add custom functions to be used throughout the fjml code
 ```
 
 
 
 ```python title="main.py"
-    from fjml import load_program, Compiler, data_types as dt
-    from path.to.program import Actions
-    import enum
-    import flet as ft
+from fjml import load_program, Compiler, data_types as dt
+from path.to.program import Actions
+import enum
+import flet as ft
 
-    class Paths(enum.StrEnum):
-        PROGRAM: str = "path\\to\\program"
-        COMPILED: str = "path\\to\\compiled_program\\compiled.fjml"
+class Paths(enum.StrEnum):
+    PROGRAM: str = "path\\to\\program"
+    COMPILED: str = "path\\to\\compiled_program\\compiled.fjml"
 
-    class App:
+class App:
 
-        def __init__(self, compile_run: bool = False) -> None:
-            if not compile_run:
-                compiler: Compiler = Compiler(
-                    dt.ParamGenerator(
-                        program_path=Paths.PROGRAM
-                        compile_path=Paths.COMPILED
-                    )
+    def __init__(self, compile_run: bool = False) -> None:
+        if not compile_run:
+            compiler: Compiler = Compiler(
+                dt.ParamGenerator(
+                    program_path=Paths.PROGRAM
+                    compile_path=Paths.COMPILED
                 )
-                compiler.compile()
-            
-        async def run(self, page: ft.Page):
-            page = load_program(
-                Paths.COMPILED, Actions, page
             )
-            page.go("/")
+            compiler.compile()
+        
+    async def run(self, page: ft.Page):
+        page = load_program(
+            Paths.COMPILED, Actions, page
+        )
+        page.go("/")
          
 
 
@@ -125,7 +122,7 @@ class Actions(dt.EventContainer):
 
 Allows the use of python code to perform actions such as api calls, function calls, etc via the `EventContainer` Abstract Base Class 
 
-`EventContainer` includes builtin helper classes and functions like:
+`EventContainer` includes multiple built-in helper classes and functions to help create programs
 - # EventContainer methods and classes
 
 
@@ -534,6 +531,26 @@ styles can be used by then adding the `"unpack"` attribute inside the control's 
             }
         }
         ```
+- ### Action Class:
+    Inorder to link your action class to fjml code you must import the in the `Header` container using the key, `action_import`.
+    - #### Example:
+
+        ```json
+        {
+            "Header":{
+                "action_import":{
+                    "import":"Actions",
+                    "from":".ui_test_program.func"
+                }
+            },
+            "Imports":[...],
+            "Controls":[...],
+            "UI":[...]
+        }
+        ```
+
+    All action imports must exist in an importable path and be writen as if it was ran in the `main.py` file.
+
 
 - ### Custom Controls:
     Fjml allows you multiple ways to define and add custom controls to your project.
@@ -550,6 +567,7 @@ styles can be used by then adding the `"unpack"` attribute inside the control's 
                 }
             ]
         },
+        "Imports":[...],
         "Controls":[
             {
                 "var_name":"switch",
@@ -571,7 +589,6 @@ styles can be used by then adding the `"unpack"` attribute inside the control's 
 
     ```python title="main.py"
     from fjml import load_program, Compiler, data_types as dt
-    from path.to.program import Actions
     import enum
     import flet as ft
 
@@ -595,7 +612,7 @@ styles can be used by then adding the `"unpack"` attribute inside the control's 
             
         async def run(self, page: ft.Page):
             page = load_program(
-                Paths.COMPILED, Actions, page
+                Paths.COMPILED, page
             )
             page.go("/")
          

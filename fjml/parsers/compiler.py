@@ -19,6 +19,7 @@ from .control_register import ControlRegistryOperations
 from ..utils import Utilities, import_module
 from .. import (
     data_types as dt, 
+    object_enums as onums,
     error_types as errors, 
     operation_classes as opc,
     constant_controls,
@@ -42,7 +43,10 @@ def timeit(func: Callable) -> Callable:
 
 Tools: Utilities = Utilities()
 CompileHandler: utils.CompiledFileHandler = utils.CompiledFileHandler()
-VALID_KEYS: Final[Sequence[str]] = ["UI", "Imports", "Controls", "Header"]
+VALID_KEYS: Final[Sequence[str]] = [
+    onums.MarkupKeys.UI, onums.MarkupKeys.IMPORTS, 
+    onums.MarkupKeys.CONTROLS, onums.MarkupKeys.HEADER
+]
 MarkupType: TypeAlias = Union[Sequence[dt.JsonDict], dt.JsonDict]
 
 class Compiler:
@@ -114,19 +118,19 @@ class Compiler:
         
         for value in data:
             if isinstance(value, (dt.ThirdPartyExtention, dt.UIImports)):
-                result.extend(value.extensions)
+                result.extend(value.extensions())
             
         return result
 
     def validate_imports(self, file_name: str, data: dt.JsonDict) -> NoReturn:
         keys: Sequence[str]
 
-        if data.get("Controls", None) == None:
-            raise errors.InvalidMarkupFormatError(file_name, "Controls")
+        if data.get(onums.MarkupKeys.CONTROLS, None) == None:
+            raise errors.InvalidMarkupFormatError(file_name, onums.MarkupKeys.CONTROLS)
         keys = list(data.keys())
 
         try:
-            keys.remove("Controls")
+            keys.remove(onums.MarkupKeys.CONTROLS)
         except:
             pass
 
@@ -173,23 +177,23 @@ class Compiler:
             if name in control_keys or name in constants.MARKUP_SPECIFIC_CONTROLS:
                 continue
             
-            if name not in control_scheme["Controls"]:
+            if name not in control_scheme[onums.ControlRegKeys.CONTROLS]:
                 continue
 
-            control = control_scheme["ControlTypes"][
-                control_scheme["Controls"].index(name)
+            control = control_scheme[onums.ControlRegKeys.CONTROL_TYPES][
+                control_scheme[onums.ControlRegKeys.CONTROLS].index(name)
             ]
             
             control_keys.add(name)
             self.controls[name] = getattr(
-                import_module(control["source"], None), 
-                control["attr"]
+                import_module(control[onums.ControlRegKeys.SOURCE], None), 
+                control[onums.ControlRegKeys.ATTR]
             )
             
             self.control_param_types[name] = utils.TypeHintSerializer.deserialize(
-                control["type_hints"]
+                control[onums.ControlRegKeys.TYPE_HINTS]
             )
-            self.control_settings[name] = control["valid_settings"]
+            self.control_settings[name] = control[onums.ControlRegKeys.VALID_SETTINGS]
 
     def __load_controls(self) -> NoReturn:
         if not self.controls_registry:
@@ -212,10 +216,10 @@ class Compiler:
     def compile(self) -> dt.CompiledModel:
         self.__load_program()
         self.parsed_controls.update(
-            self.__parse_controls(self.code["Controls"])
+            self.__parse_controls(self.code[onums.MarkupKeys.CONTROLS])
         )
         self.validate_main_file()
-        self.__parse_ui(self.code["UI"])
+        self.__parse_ui(self.code[onums.MarkupKeys.UI])
         
         self.dependent_refs.update_cache()
         
@@ -223,7 +227,8 @@ class Compiler:
             self.parsed_controls, self.style_sheet,
             self.parsed_ui, self.controls,
             self.routes, self.control_settings, self.dependent_refs,
-            self.control_param_types, self.params.program_name
+            self.control_param_types, self.params.action_code, 
+            self.params.program_name
         )
         
         self.params.save_program(model)
@@ -239,13 +244,13 @@ class Compiler:
         with open(path, "r") as program:
             file = json.load(program)
             self.validate_imports(source, file)
-            self.update_used_controls(file["Controls"])
-            return file["Controls"]
+            self.update_used_controls(file[onums.MarkupKeys.CONTROLS])
+            return file[onums.MarkupKeys.CONTROLS]
             
         return []
 
     def __parse_imports(self) -> NoReturn:
-        import_data: Sequence[dt.ImportDict] = self.code.get("Imports", None)
+        import_data: Sequence[dt.ImportDict] = self.code.get(onums.MarkupKeys.IMPORTS, None)
         data: dt.JsonDict
         source: str
         paths: Sequence[str] = []
@@ -256,14 +261,14 @@ class Compiler:
             return
 
         for data in import_data:
-            source = data.get('source', "")
+            source = data.get(onums.ImportKeys.SOURCE, "")
             if not source:
                 continue
             if utils.is_sequence_not_str(source):
-                if not data.get("from", None):
+                if not data.get(onums.ImportKeys.FROM, None):
                     continue
                 for i in source:
-                    paths.append(f"{data['from']}\\{i}.json")
+                    paths.append(f"{data[onums.ImportKeys.FROM]}\\{i}.json")
             else:
                 paths.append(f"{source}.json")
                 
@@ -282,7 +287,10 @@ class Compiler:
 
     def update_used_controls(self, data: MarkupType) -> NoReturn:
         self.used_controls.update(
-            Tools.find_values(data, "control_type", constants.MARKUP_SPECIFIC_CONTROLS)
+            Tools.find_values(
+                data, onums.ControlKeys.CONTROL_TYPE, 
+                constants.MARKUP_SPECIFIC_CONTROLS
+            )
         )
 
     def __parse_controls(
@@ -293,9 +301,10 @@ class Compiler:
 
         for data in self.parse_iterator(controls, checks.NamedControlCheck):
             self.dependent_refs.add_dependencies(
-                data["var_name"], data.get("settings", {})
+                data[onums.ControlKeys.VAR_NAME], 
+                data.get(onums.ControlKeys.SETTINGS, {})
             )
-            parsed_data[data["var_name"]] = self.make_control_model(
+            parsed_data[data[onums.ControlKeys.VAR_NAME]] = self.make_control_model(
                 data
             )
 
@@ -303,12 +312,12 @@ class Compiler:
     
     def make_control_model(self, data: dt.NamedControlDict) -> dt.ControlModel:
         return dt.ControlModel(
-            name=data["var_name"],
-            control_name=data["control_type"],
-            control=self.controls[data["control_type"]],
-            settings=data.get("settings", {}),
+            name=data[onums.ControlKeys.VAR_NAME],
+            control_name=data[onums.ControlKeys.CONTROL_TYPE],
+            control=self.controls[data[onums.ControlKeys.CONTROL_TYPE]],
+            settings=data.get(onums.ControlKeys.SETTINGS, {}),
             valid_settings=self.control_settings[
-                data["control_type"]
+                data[onums.ControlKeys.CONTROL_TYPE]
             ]
         )
 
@@ -317,11 +326,12 @@ class Compiler:
         data: tuple[str, dt.JsonDict]
 
         for route_dict in self.parse_iterator(ui_data, checks.RouteCheck):
-            self.routes.add(route_dict["route"])
+            self.routes.add(route_dict[onums.ControlKeys.ROUTE])
             self.dependent_refs.add_dependencies(
-                route_dict["route"], route_dict["settings"]
+                route_dict[onums.ControlKeys.ROUTE], 
+                route_dict[onums.ControlKeys.SETTINGS]
             )
-            self.parsed_ui[route_dict["route"]] = dt.UIViews(**route_dict)
+            self.parsed_ui[route_dict[onums.ControlKeys.ROUTE]] = dt.UIViews(**route_dict)
 
         self.__load_controls()
     
@@ -337,11 +347,14 @@ class Compiler:
 
 
 @timeit
-def load_program(compiled_path: str, methods: Type[dt.EventContainer], page: ft.Page) -> ft.Page:
-    backend: Backend = Backend(
-        CompileHandler.load(compiled_path), 
-        page
-    )
+def load_program(compiled_path: str, page: ft.Page) -> ft.Page:
+    compiled_data: dt.CompiledModel
+    backend: Backend
     
-    return backend.initialize(methods)
+    compiled_data = CompileHandler.load(compiled_path)
+    backend = Backend(compiled_data, page)
+    
+    return backend.initialize(
+        compiled_data.methods
+    )
 

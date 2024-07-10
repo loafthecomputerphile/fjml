@@ -3,6 +3,10 @@
         "import_folder":"extra",
         "program_name":"UI Test",
         "style_sheet_name":"style_sheet",
+        "action_import":{
+            "import":"Actions",
+            "from":".ui_test_program.func"
+        },
         "extentions":[
             {
                 "import":["RouteBtn", "TestContainer"], 
