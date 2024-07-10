@@ -20,7 +20,7 @@ from typing import (
 
 import flet as ft
 
-from . import utils
+from . import utils, object_enums as onums
 
 if TYPE_CHECKING:
     from . import operation_classes as opc
@@ -33,12 +33,6 @@ TypeHints: TypeAlias = Mapping[str, Type]
 TypeHintMap: TypeAlias = Mapping[str, TypeHints]
 ControlType: TypeAlias = Union[ft.Control, enum.Enum, types.FunctionType]
 ControlMap: TypeAlias = dict[str, ControlType]
-
-class ImportKeys(enum.StrEnum):
-    IMPORT: str = "import"
-    FROM: str = "from"
-    USING: str ="using"
-
 
 class ControlRegisterInterface(TypedDict):
     name: str
@@ -140,18 +134,17 @@ class ParamGenerator:
     __slots__ = [
         "header", "program_path", "custom_controls", "style_sheet", 
         "imports_path", "ui_code", "compile_path", "program_name",
-        "extentions"
+        "extentions", "action_code"
     ]
     
-    def __init__(
-        self, program_path: str, compile_path: str
-    ) -> NoReturn:
+    def __init__(self, program_path: str, compile_path: str) -> NoReturn:
+        self.custom_controls: Sequence[ControlJsonScheme]
         self.program_name: str
         self.program_path: str = program_path
-        self.custom_controls: Sequence[ControlJsonScheme]
         self.compile_path: str = compile_path
         self.style_sheet: JsonDict = {}
         self.imports_path: str = ""
+        self.action_code: bytes
         self.ui_code: JsonDict = {}
         self.header: Header = Header()
         if not self.program_path_check:
@@ -173,7 +166,7 @@ class ParamGenerator:
     def parse_extentions(self, global_data):
         self.header.parse_extentions(global_data)
         self.custom_controls = self.header.extentions
-        
+        self.action_code = self.header.action
     
     def setup(self) -> NoReturn:
         file: io.TextIOWrapper
@@ -185,10 +178,9 @@ class ParamGenerator:
             )
         
         with open(ui_code_path, "r") as file:
-            #print(type(file))
             self.ui_code = json.load(file)
             self.validate_ui_format()
-            self.header.load_dict(self.ui_code["Header"])
+            self.header.load_dict(self.ui_code[onums.MarkupKeys.HEADER])
         
         self.program_name = self.header.program_name
         
@@ -296,15 +288,17 @@ class CompiledModel:
         "controls", "style_sheet", "ui", 
         "control_awaitable", "control_map", "routes", 
         "dependencies", "type_hints", "program_name",
-        "control_settings"
+        "control_settings", "methods"
     ]
     def __init__(
         self, controls: ParsedControls, style_sheet: opc.StyleSheet, 
         ui: Mapping[str, UIViews], 
         control_map: ControlMap, routes: Sequence[str], control_settings: Sequence[str],
-        dependencies: opc.ControlDependencies, type_hints: TypeHintMap, program_name: str = ""
+        dependencies: opc.ControlDependencies, type_hints: TypeHintMap, 
+        methods: Type[EventContainer], program_name: str = ""
     ) -> NoReturn:
-    
+        
+        self.methods: bytes = methods
         self.controls: ParsedControls = controls
         self.style_sheet: opc.StyleSheet = style_sheet
         self.ui: Mapping[str, UIViews] = ui
@@ -317,13 +311,15 @@ class CompiledModel:
 
 @dataclass
 class Header:
+    action_import: Mapping = field(default_factory=dict)
     program_name: str = field(default="")
     import_folder: str = field(default="")
     style_sheet_name: str = field(default="")
-    extentions: list = field(default_factory=list)
+    extentions: list[Mapping] = field(default_factory=list)
     
     def __post_init__(self) -> NoReturn:
         func: Callable = lambda x: x[:2] != "__"
+        self.action: Union[Type[EventContainer], None] = None
         self.attrs: Sequence[str] = list(
             filter(func, dir(self))
         )
@@ -339,7 +335,27 @@ class Header:
             elif name in data:
                 setattr(self, name, data[name])
     
+    def get_file(self, global_data: Mapping) -> NoReturn:
+        
+        if not isinstance(self.action_import, Mapping):
+            self.action = BlankEventContainer()
+        elif onums.ImportKeys.IMPORT not in self.action_import:
+            self.action = BlankEventContainer()
+        elif onums.ImportKeys.FROM not in self.action_import:
+            self.action = BlankEventContainer()
+            
+        if self.action:
+            return
+        
+        self.action = Importer(global_data).run_import(
+            self.action_import[onums.ImportKeys.FROM],
+            self.action_import[onums.ImportKeys.IMPORT]
+        )
+        del self.action_import
+        
+    
     def parse_extentions(self, global_data: Mapping) -> NoReturn:
+        self.get_file(global_data)
         result: Sequence[UIImports] = []
         ext: Sequence[JsonDict]
         imports: Union[Sequence, str]
@@ -348,16 +364,16 @@ class Header:
             ext = []
             if not isinstance(data, Mapping):
                 continue
-            if ImportKeys.IMPORT not in data or ImportKeys.FROM not in data:
+            if onums.ImportKeys.IMPORT not in data or onums.ImportKeys.FROM not in data:
                 continue
             
-            if not isinstance(data.get(ImportKeys.USING, None), str):
-                data[ImportKeys.USING] = ""
+            if not isinstance(data.get(onums.ImportKeys.USING, None), str):
+                data[onums.ImportKeys.USING] = ""
             
-            if not isinstance(data.get(ImportKeys.FROM, None), str):
+            if not isinstance(data.get(onums.ImportKeys.FROM, None), str):
                 continue
             
-            imports = data.get(ImportKeys.IMPORT, None)
+            imports = data.get(onums.ImportKeys.IMPORT, None)
             if isinstance(imports, str):
                 ext.append(imports)
             elif isinstance(imports, Sequence):
@@ -367,10 +383,10 @@ class Header:
             
             result.append(
                 UIImports(
-                    data[ImportKeys.FROM], 
+                    data[onums.ImportKeys.FROM], 
                     ext, 
                     global_data, 
-                    data[ImportKeys.USING]
+                    data[onums.ImportKeys.USING]
                 )
             )
         
@@ -389,7 +405,6 @@ class ThirdPartyExtention:
     def get_obj(self, name: str) -> Any:
         return getattr(self.module, name, None)
     
-    @property
     def extensions(self) -> Sequence[ControlRegisterInterface]:
         result: Sequence[ControlRegisterInterface] = []
         obj_name: str
@@ -408,44 +423,51 @@ class ThirdPartyExtention:
         return result
 
 
+class Importer:
+    
+    def __init__(self, outer_global: Mapping):
+        self.outer_global: Mapping = outer_global
+    
+    def importer(self, module_name: str) -> types.ModuleType:
+        loc: Mapping = {}
+        if module_name.strip().startswith("."):
+            name_split: str = module_name.split(".")
+            exec(f"from {'.'.join(name_split[:-1])} import {name_split[-1]} as module", self.outer_global, loc)
+            return loc["module"]
+        
+        exec(f"import {module_name} as module", self.outer_global, loc)
+        return loc["module"]
+    
+    def run_import(self, module_name: str, attr: str) -> Any:
+        return getattr(
+            self.importer(module_name),
+            attr,
+            None
+        )
+
+
 class UIImports:
     
-    __slots__ = ["module", "imports", "prefix", "module_name", "outer_global"]
+    __slots__ = ["module", "imports", "prefix", "module_name", "importer"]
     
     def __init__(self, module_name: str, imports: Sequence[str], outer_global: dict, module_prefix: str = "") -> NoReturn:
-        self.outer_global = outer_global
         self.module_name: str = module_name
         self.module: types.ModuleType
         self.imports: Sequence[str] = imports
         self.prefix: str = module_prefix
+        self.importer: Importer = Importer(outer_global)
     
     def get_obj(self, name: str) -> Any:
         return getattr(self.module, name, None)
     
-    def importer(self, relative: bool = False) -> types.ModuleType:
-        loc: Mapping = {}
-        if relative:
-            name_split: str = self.module_name.split(".")
-            exec(f"from {'.'.join(name_split[:-1])} import {name_split[-1]} as module", self.outer_global, loc)
-            return loc["module"]
-        
-        exec(f"import {self.module_name} as module", self.outer_global, loc)
-        return loc["module"]
-        
-    
-    def run_import(self) -> NoReturn:
-        if self.module_name.strip().startswith("."):
-            self.module = self.importer(True)
-            return
-        self.module = self.importer()
-    
-    @property
     def extensions(self) -> Sequence[ControlRegisterInterface]:
         result: Sequence[ControlRegisterInterface] = []
         obj_name: str
         obj: Any
         
-        self.run_import()
+        self.module = self.importer.importer(self.module_name)
+        if not self.module:
+            return []
         
         for obj_name in self.imports:
             obj = self.get_obj(obj_name)
@@ -478,3 +500,10 @@ class EventContainer(metaclass=ABCMeta):
     @abstractmethod
     def _imports(self) -> NoReturn: ...
     
+
+class BlankEventContainer(EventContainer):
+    def _page_setup(self) -> NoReturn: 
+        ...
+
+    def _imports(self) -> NoReturn: 
+        ...

@@ -10,31 +10,20 @@ from typing import (
     get_type_hints
 )
 from functools import lru_cache
-import importlib, inspect, os, io, json, errno, dill, base64, copy, lzma, sys, types
+import importlib, inspect, os, io, json
+import errno, dill, base64, copy, lzma, types
 
-from pathlib import Path
 from flet import Control
 
 from .constants import (
     NULL, CONTROL_REGISTRY_PATH, EMPTY_REGISTRY_FILE
 )
 from .error_types import RegistryFileNotFoundError
+from . import object_enums as onums
 if TYPE_CHECKING:
     from . import data_types as dt
     from .parsers.renderer import Renderer
 
-
-
-
-def easy_import(path: str) -> types.ModuleType:
-    path = path\
-        .replace('/', os.path.sep)\
-        .replace('\\', os.path.sep)
-    try:
-        name = path.split(os.path.sep)[-1].split(".")[0]
-    except:
-        raise Exception("{path} is an invalid import string")
-    return  importlib.machinery.SourceFileLoader(name, path).load_module()
 
 @lru_cache(8)
 def import_module(name: str, package=None) -> types.ModuleType:
@@ -55,13 +44,12 @@ class ObjectSource:
 def is_sequence_not_str(value: Sequence) -> bool:
     return isinstance(value, Sequence) and not isinstance(value, str)
 
-def _split_combine(string: str, extra: str, sep: str) -> str:
-    result: Sequence[str] = []
-    result.extend(string.split(sep)[1:])
-    result.append(extra)
-    return sep.join(result)
-
 class Utilities:
+    
+    @staticmethod
+    def mass_any_contains(data: Sequence, obj: Any) -> bool:
+        item: Any
+        return any([item in obj for item in data])
     
     @staticmethod
     def control_to_registry_interface(
@@ -122,15 +110,15 @@ class Utilities:
         if not valid_settings:
             return settings
         
-        return {key:value for key, value in settings.items() if key in valid_settings}
+        return dict(filter(lambda x: x[0] in valid_settings, settings.items()))
 
     @staticmethod
     def get_keys_with_dict(settings: dt.JsonDict) -> Sequence[str]:
-        return (key for key, value in settings.items() if isinstance(value, Mapping))
+        return filter(lambda x: isinstance(settings[x], Mapping), settings)
 
     @staticmethod
     def get_keys_with_list(settings: dt.JsonDict) -> Sequence[str]:
-        return (key for key, value in settings.items() if is_sequence_not_str(value))
+        return filter(lambda x: is_sequence_not_str(settings[x]), settings)
 
     @staticmethod
     def find_values(json_obj: dt.JsonDict, key: str, ignore: Sequence[str] = []) -> set[str]:
@@ -267,10 +255,10 @@ class Utilities:
     def validate_index(
         data: Mapping, depth_count: int, is_ref: bool = False
     ) -> str:
-        types: str = data.get("control_type", None)
-        if is_ref and types != "loop_index":
+        types: str = data.get(onums.ControlKeys.CONTROL_TYPE, None)
+        if is_ref and types != onums.LoopKeys.LOOP_INDEX:
             return NULL
-        val: Any = data.get("idx", None)
+        val: Any = data.get(onums.LoopKeys.IDX, None)
         if not val:
             return NULL
         if not is_sequence_not_str(val):
@@ -280,10 +268,10 @@ class Utilities:
 
     @staticmethod
     def refs_type(data: Mapping) -> str:
-        if data.get("refs", None):
-            return "refs"
-        elif data.get("code_refs", None):
-            return "code_refs"
+        if data.get(onums.RefsKeys.REFS, None):
+            return onums.RefsKeys.REFS
+        elif data.get(onums.RefsKeys.CODE_REFS, None):
+            return onums.RefsKeys.CODE_REFS
         return ""
 
     @staticmethod
@@ -298,7 +286,7 @@ class Utilities:
         if Utilities.validate_index(data, depth_count) == NULL:
             return 
         
-        idx: int = data["idx"]
+        idx: int = data[onums.LoopKeys.IDX]
         vals: Any = loop_values[idx[0]]
         
         return vals[idx[1]] if is_sequence_not_str(vals) else vals
@@ -310,7 +298,7 @@ class Utilities:
     ) -> Sequence:
 
         if isinstance(iterator_value, Mapping):
-            value: Any = iterator_value.get("range", NULL)
+            value: Any = iterator_value.get(onums.LoopKeys.RANGE, NULL)
             if is_sequence_not_str(value):
                 if len(value) > 3:
                     value = value[:3]
@@ -320,9 +308,9 @@ class Utilities:
                     return range(*value)
                 return []
 
-            if iterator_value.get("code_refs", NULL) == NULL:
+            if iterator_value.get(onums.RefsKeys.CODE_REFS, NULL) == NULL:
                 return []
-            if iterator_value.get("refs", NULL) != NULL:
+            if iterator_value.get(onums.RefsKeys.REFS, NULL) != NULL:
                 return []
             
             result: Sequence = cls.get_ref(iterator_value)
@@ -352,7 +340,7 @@ class Utilities:
             result = {}
             for key, value in data.items():
                 if isinstance(value, Mapping):
-                    if value.get("control_type") == "loop_index":
+                    if value.get(onums.ControlKeys.CONTROL_TYPE) == onums.LoopKeys.LOOP_INDEX:
                         new_value = Utilities.sanitize(value, depth_count, loop_values)
                         result[key] = new_value
                     else:
@@ -387,6 +375,20 @@ class CompiledFileHandler:
             return dill.load(file)
 
 
+class ObjectCompressor:
+    
+    @staticmethod
+    def compress(obj: Any) -> bytes:
+        return lzma.compress(
+            dill.dumps(obj)
+        )
+    
+    @staticmethod
+    def decompress(compressed_obj: bytes) -> Any:
+        return dill.loads(
+            lzma.decompress(compressed_obj)
+        )
+
 class TypeHintSerializer:
     
     @classmethod
@@ -405,11 +407,11 @@ class TypeHintSerializer:
     
     @classmethod
     def serialize(cls, data: dt.TypeHints) -> Mapping[str, str]:
-        return {k: cls.encode(v) for k, v in data.items()}
+        return dict(map(lambda x: (x[0], cls.encode(x[1])), data.items()))
     
     @classmethod
     def deserialize(cls, data: Mapping[str, str]) -> dt.TypeHints:
-        return {k: cls.decode(v) for k, v in data.items()}
+        return dict(map(lambda x: (x[0], cls.decode(x[1])), data.items()))
     
     @staticmethod
     def string_to_any(dtype: Union[type, str]) -> type:

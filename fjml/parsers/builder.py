@@ -137,7 +137,7 @@ class Backend:
             raise InitializationError()
         
         self.__add_make_view("/")
-        for route in self.__renderer._ui.keys():
+        for route in self.__renderer._ui:
             if self.__valid_route(route):
                 self.__add_make_view(route)
     

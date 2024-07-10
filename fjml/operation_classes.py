@@ -121,72 +121,48 @@ class EventParser:
 
     def route(
         self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> bool:
-        if not key.startswith("on_") or data.get("route", NULL) == NULL:
-            return False
+    ) -> NoReturn:
         
-        if not isinstance(data["route"], str):
+        if not isinstance(data["route"], str) or not key.startswith("on_"):
             settings[key] = None
-            return True
+            return
         
         settings[key] = partial(self.change_route, route=data["route"])
-        return True
 
     def call(
         self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> bool:
+    ) -> NoReturn:
         #get_call: str = data.get("call", constants.NULL)
-        if not isinstance(data, Mapping):
-            return False
-        
-        if data.get("call", NULL) == NULL:
-            return False
-
         if not isinstance(data["call"], str):
             settings[key] = None
-            return True
-        
-        setts = self.settings_object_parsers(data.get("settings", {}))
+            return
         
         settings[key] = self.__renderer.object_bucket.call_object(
-            data["call"], setts
+            data["call"], self.settings_object_parsers(data.get("settings", {}))
         )
-        
-        return True
 
     def eval(
         self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> bool:
+    ) -> NoReturn:
         #get_eval: Union[str, None] = data.get("eval", None)
-        if not isinstance(data, Mapping):
-            return False
-        
-        if data.get("eval", NULL) == NULL:
-            return False
-
         if not isinstance(data["eval"], str):
             settings[key] = None
-            return True
+            return
         
         settings[key] = eval(data["eval"], {"ft":ft, "self":self.__backend})
-        return True
 
     def func(
         self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> bool:
+    ) -> NoReturn:
         #get_func: Union[str, None] = data.get("func", None)
-        if data.get("func", NULL) == NULL:
-            return False
-
-        if not isinstance(data["func"], str):
+        if not isinstance(data["func"], str) or not key.startswith("on_"):
             settings[key] = None
-            return True
+            return
         
         settings[key] = partial(
             self.get_attr(data["func"]),
             **self.settings_object_parsers(data.get("settings", {})),
         )
-        return True
 
 
 class Reference:
@@ -523,9 +499,7 @@ class SetupFunctions:
             self.add_func(*values)
     
     def call_functions(self) -> NoReturn:
-        function: Callable
-        for function in self.__container:
-            self.__backend.page.run_task(function)
+        list(map(self.__backend.page.run_task, self.__container))
 
 
 class PropertyContainer:
@@ -690,6 +664,9 @@ class TypeCheck:
     def type_rectification(cls, settings: dt.ControlSettings, types: dt.TypeHints = {}) -> dt.ControlSettings:
         key: str
         value: Any
+        
+        if not types:
+            return settings
         
         for key, value in settings.items():
             if key not in types:
