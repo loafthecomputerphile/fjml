@@ -5,14 +5,14 @@ import pathlib as Path
 MODULE_PATH: str = Path.PurePath(__file__).parent
 
 ARCHIVE_FORMAT: Final[str] = "zip"
-OPERATION_ARGS: Final[Sequence[str]] = ["make", "register"]
+OPERATION_ARGS: Final[Sequence[str]] = ["make", "registry"]
 MARKUP_SPECIFIC_CONTROLS: Final[Sequence[str]] = ["loop", "loop_index"]
 CONTROL_REGISTRY_PATH: Final[str] = str(
     Path.PurePath(MODULE_PATH, "registry\\control_registry.json")
 )
 
 NULL: Final[str] = "<NULL>"
-INVALID_STYLE_KEYS: Final[Sequence[str]] = ["refs", "code_refs", "styling", "func", "route", "call", "unpack"]
+INVALID_STYLE_KEYS: Final[Sequence[str]] = ["refs", "code_refs", "styling", "func", "route", "call", "_unpack"]
 RANGE_PARAM_LENGTH: Final[Sequence[int]] = [1, 2, 3]
 EMPTY_REGISTRY_FILE: Final[Mapping] = {
     "Controls": [],
@@ -47,7 +47,7 @@ IMPORT_FILE_TEXT: Final[Mapping] = {
             "control_type": "Text",
             "settings": {
                 "value": "Hello World",
-                "unpack":{"styling":"base_text_style"}
+                "_unpack":{"styling":"base_text_style"}
             },
         }
     ]
@@ -58,6 +58,10 @@ USER_INTEFACE_FILE_TEXT: Final[Mapping] = {
         "import_folder":"extra",
         "program_name":"program",
         "style_sheet_name":"style_sheet",
+        "action_import":{
+            "import":"Actions",
+            "from":".ui_test_program.func"
+        },
         "extentions":[]
     },
     "Imports": [{"source": "import1"}],

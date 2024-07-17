@@ -2,7 +2,7 @@ from __future__ import annotations
 from functools import partial, lru_cache, cached_property
 from types import MethodType
 from collections import Counter
-import itertools
+import itertools, operator, copy
 import pprint
 import inspect
 from typing import (
@@ -14,6 +14,7 @@ from typing import (
     Mapping
 )
 import flet as ft
+from .object_enums import *
 from . import (
     error_types as err,
     utils,
@@ -28,8 +29,13 @@ if TYPE_CHECKING:
     
 
 Tools: utils.Utilities = utils.Utilities()
+
 NULL: str = constants.NULL
-PropertyLiteral: TypeAlias = Literal["set", "get", "del"]
+PropertyLiteral: TypeAlias = Literal[
+    PropertyKeys.SET, 
+    PropertyKeys.GET, 
+    PropertyKeys.DEL
+]
 
 def attribute_filter(data: tuple[str, Any]) -> bool:
     return not data[0].startswith("_") and not inspect.ismethod(data[1])
@@ -47,7 +53,7 @@ class ControlDependencies:
     
     def add_dependencies(self, var_name: str, settings: dt.ControlDict, update: bool = False) -> NoReturn:
         val: str
-        for val in Tools.find_values(settings, "refs"):
+        for val in Tools.find_values(settings, RefsKeys.REFS):
             if not self.contains(var_name, val):
                 self.add(var_name, val)
         
@@ -59,9 +65,8 @@ class ControlDependencies:
     
     def add(self, var_name: str, dependency: str) -> NoReturn:
         if var_name in self.__data:
-            if self.contains(var_name, dependency):
-                return
-            return self.__data[var_name].append(dependency)
+            return (None if self.contains(var_name, dependency) else 
+                self.__data[var_name].append(dependency))
         self.__data[var_name] = [dependency]
     
     def _get(self, var_name: str) -> Sequence[str]:
@@ -94,9 +99,37 @@ class ControlDependencies:
         return self.__data
     
     def update_cache(self) -> NoReturn:
-        for name in self.__data.keys():
+        for name in self.__data:
             self.cache[name] = self.get(name, False)
 
+
+class EvalLocalData:
+    __data: Mapping[str, Any] = {}
+    
+    @classmethod
+    def add(cls, name: str, obj: Any) -> NoReturn:
+        cls.__data[name] = obj
+    
+    @classmethod
+    def delete(cls, name: str) -> NoReturn:
+        if name in cls.__data:
+            del cls.__data[name]
+    
+    @classmethod
+    def mass_add(cls, data: Mapping[str, Any]) -> NoReturn:
+        cls.__data.update(data)
+        
+    @classmethod
+    def mass_delete(cls, data: Sequence[str]) -> NoReturn:
+        func: Callable[[Any], bool] = partial(operator.contains, cls.__data.copy())
+        name: str
+        
+        for name in filter(func, data):
+            del cls.__data[name]
+    
+    @property
+    def data(cls) -> Mapping[str, Any]:
+        return copy.deepcopy(cls.__data)
 
 
 class UIViews:
@@ -118,51 +151,40 @@ class EventParser:
         self.change_route: MethodType = self.__backend.change_route
         self.settings_object_parsers: MethodType = self.__renderer.settings_object_parsers
         self.get_attr: MethodType = self.__backend.get_attr
+    
+    def is_event(self, key: str) -> bool:
+        return key.startswith("on_")
+    
+    def is_str(self, data: Any) -> bool:
+        return isinstance(data, str)
+    
+    def get_settings(self, data: Mapping[str, Any]) -> dt.ControlSettings:
+        return self.settings_object_parsers(
+            data.get(ControlKeys.SETTINGS, {})
+        )
 
-    def route(
-        self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> NoReturn:
-        
-        if not isinstance(data["route"], str) or not key.startswith("on_"):
-            settings[key] = None
-            return
-        
-        settings[key] = partial(self.change_route, route=data["route"])
+    def route(self, key: str, data: dt.JsonDict, settings: dt.JsonDict) -> NoReturn:
+        settings[key] = (partial(self.change_route, route=data[ControlKeys.ROUTE])
+            if self.is_str(data[ControlKeys.ROUTE]) and self.is_event(key) else None
+        )
 
-    def call(
-        self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> NoReturn:
-        #get_call: str = data.get("call", constants.NULL)
-        if not isinstance(data["call"], str):
-            settings[key] = None
-            return
-        
+    def call(self, key: str, data: dt.JsonDict, settings: dt.JsonDict) -> NoReturn:
         settings[key] = self.__renderer.object_bucket.call_object(
-            data["call"], self.settings_object_parsers(data.get("settings", {}))
-        )
+            data[EventKeys.CALL], 
+            self.get_settings(data)
+        ) if self.is_str(data[EventKeys.CALL]) else None
 
-    def eval(
-        self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> NoReturn:
-        #get_eval: Union[str, None] = data.get("eval", None)
-        if not isinstance(data["eval"], str):
-            settings[key] = None
-            return
-        
-        settings[key] = eval(data["eval"], {"ft":ft, "self":self.__backend})
+    def eval(self, key: str, data: dt.JsonDict, settings: dt.JsonDict) -> NoReturn:
+        settings[key] = eval(
+            data[EventKeys.EVAL], {}, 
+            self.__backend.eval_locals.data
+        ) if self.is_str(data[EventKeys.EVAL]) else None
 
-    def func(
-        self, key: str, data: dt.JsonDict, settings: dt.JsonDict
-    ) -> NoReturn:
-        #get_func: Union[str, None] = data.get("func", None)
-        if not isinstance(data["func"], str) or not key.startswith("on_"):
-            settings[key] = None
-            return
-        
+    def func(self, key: str, data: dt.JsonDict, settings: dt.JsonDict) -> NoReturn:
         settings[key] = partial(
-            self.get_attr(data["func"]),
-            **self.settings_object_parsers(data.get("settings", {})),
-        )
+            self.get_attr(data[EventKeys.FUNC]),
+            **self.get_settings(data)
+        ) if self.is_str(data[EventKeys.FUNC]) and self.is_event(key) else None
 
 
 class Reference:
@@ -181,19 +203,16 @@ class Reference:
         if not data or not isinstance(data, str):
             return
         
-        if rtype == "refs":
+        if rtype == RefsKeys.REFS:
             result = self.__get_reference(data)
-        elif rtype == "code_refs":
+        elif rtype == RefsKeys.CODE_REFS:
             result = self.__get_reference(data, True)
         
-        if not result:
-            return
-        
-        return self.__get_attr_index(ref, result, rtype)
+        return None if not result else self.__get_attr_index(ref, result, rtype)
 
     def __get_attr_index(self, mapping: Mapping, data: Any, ref_type: str) -> Any:
-        keys: tuple[str, str] = ("attr", "idx")
-        group: Sequence = mapping.get("group", [])
+        keys: tuple[str, str] = (ControlKeys.ATTR, LoopKeys.IDX)
+        group: Sequence = mapping.get(RefsKeys.GROUP, [])
         result: Any = data
         key: str
         value: Any
@@ -222,13 +241,11 @@ class Reference:
         return result
     
     def parse_attr_idx(self, result: Any, key: str, value: Any, depth: int, ref_type: str) -> Any:
-        if key == "attr":
-            if not isinstance(value, str):
-                return
+        if key == ControlKeys.ATTR:
+            if not isinstance(value, str): return
             return getattr(result, value, None)
-        elif key == "idx":
-            if ref_type == "refs" and depth == 0:
-                return
+        elif key == LoopKeys.IDX:
+            if ref_type == RefsKeys.REFS and depth == 0: return
             return self.__get_index(result, value)
         
         return None
@@ -250,7 +267,7 @@ class Reference:
         
         if is_code and ref not in self.__controls:
             if self.__property_bucket.contains(ref):
-                return self.__property_bucket.call(ref, "get")
+                return self.__property_bucket.call(ref, PropertyKeys.GET)
             elif ref in self.__attr_filter:
                 return self.__get_attr(ref)
         elif ref in self.__controls and not is_code:
@@ -277,9 +294,8 @@ class CallableObject:
         self.name: str = name
 
     def __call__(self, kwargs) -> Any:
-        if inspect.isawaitable(self.obj):
-            return asyncio.run(self.obj(**kwargs))
-        return self.obj(**kwargs)
+        return (self.obj(**kwargs) if not inspect.isawaitable(self.obj) 
+            else asyncio.run(self.obj(**kwargs)))
 
 
 class PreserveControlContainer:
@@ -353,8 +369,8 @@ class ViewOperations:
         control_settings: dt.ControlSettings = self.settings_parser(
             view_model.settings, self.valid_args, self.view_hints
         )
-        if control_settings.get("route", constants.NULL) != constants.NULL:
-            del control_settings["route"]
+        if ControlKeys.ROUTE in control_settings:
+            del control_settings[ControlKeys.ROUTE]
 
         return ft.View(view_model.route, **control_settings)
     
@@ -371,24 +387,20 @@ class ObjectContainer:
         self.__object_map: Mapping[str, CallableObject] = {}
 
     def set_object(self, name: str, obj: dt.AnyCallable) -> NoReturn:
-        if not callable(obj):
-            return
-        self.__object_map[name] = CallableObject(
-            name=name, obj=obj
-        )
+        if callable(obj):
+            self.__object_map[name] = CallableObject(
+                name=name, obj=obj
+            )
 
     def __get_object(self, name: str) -> CallableObject:
         return self.__object_map[name]
 
     def call_object(self, name: str, kwargs: Mapping) -> Any:
-        if name not in self.__object_map:
-            return 
-        return self.__get_object(name)(kwargs)
+        return self.__get_object(name)(kwargs) if name in self.__object_map else None
 
     def delete_object(self, name: str) -> NoReturn:
-        if name not in self.__object_map:
-            return
-        del self.__object_map[name]
+        if name in self.__object_map:
+            del self.__object_map[name]
 
 
 
@@ -401,10 +413,21 @@ class StyleSheet:
     def __init__(self, data: dt.JsonDict = {}) -> NoReturn:
         self.__renderer: Renderer
         self.__data: dt.JsonDict = data
-        self.invalid_key_vals: Mapping = {"control_type": ("loop_index", "loop", "refs")}
+        self.invalid_key_vals: Mapping = {
+            ControlKeys.CONTROL_TYPE:(
+                LoopKeys.LOOP_INDEX, 
+                LoopKeys.LOOP
+            )
+        }
         self.__setted: bool = False
-        self.mfind: Callable[[Sequence[str], bool], set[str]] = partial(Tools.mfind, self.__data)
-        self.find_k_v: Callable[[Mapping, bool], set[str]] = partial(Tools.find_key_with_values, self.__data)
+        self.mfind: Callable[[Sequence[str], bool], set[str]] = partial(
+            Tools.mfind, self.__data
+        )
+        
+        self.find_k_v: Callable[[Mapping, bool], set[str]] = partial(
+            Tools.find_key_with_values, self.__data
+        )
+        
         self.generate_path: MethodType = lru_cache(maxsize=32)(self.__generate_path)
         self.validate_style_sheet()
 
@@ -491,11 +514,10 @@ class SetupFunctions:
     
     def mass_add_func(self, items: Sequence[tuple[Callable, Sequence[Any]]]) -> NoReturn:
         values: tuple[Callable, Sequence[str]]
-        for values in items:
-            if not is_sequence_not_str(values):
-                continue
-            if len(values) != 2:
-                continue
+        func: Callable[[tuple[Callable, Sequence[Any]]], bool] = (
+            lambda data: is_sequence_not_str(data) and len(data) == 2
+        )
+        for values in filter(func, items):
             self.add_func(*values)
     
     def call_functions(self) -> NoReturn:
@@ -509,7 +531,11 @@ class PropertyContainer:
         self.__core_obj: Backend = core_obj
         self.__tools: utils.Utilities = tools
         self.__props: Mapping[str, Property] = {}
-        self.__valid_operators: tuple[str, str, str] = ("set", "get", "del")
+        self.__valid_operators: tuple[str, str, str] = (
+            PropertyKeys.SET, 
+            PropertyKeys.GET, 
+            PropertyKeys.DEL
+        )
 
     def contains(self, name: str) -> bool:
         return name in self.__props
@@ -527,21 +553,21 @@ class PropertyContainer:
         return operator in self.__is_valid_operator
     
     def call(
-        self, name: str, operation: PropertyLiteral = "get",
+        self, name: str, operation: PropertyLiteral = PropertyKeys.GET,
         set_val: Any = None,
     ) -> Any:
         
         if not self.validate_operator(operation) or not self.contains(name):
             return None
         
-        if set_val and operation == "set":
+        if set_val and operation == PropertyKeys.SET:
             return self.add(name, set_val)
 
         prop: Property = self.__props[name]
-        if operation == "get":
+        if operation == PropertyKeys.GET:
             return prop.obj() if callable(prop.obj) else prop.obj
 
-        if operation == "del":
+        if operation == PropertyKeys.DEL:
             del self.__props[name]
 
     def __make_method(self, obj: Callable) -> MethodType:
@@ -559,37 +585,44 @@ class ControlLoader:
     def control_registry(self) -> dt.ControlRegistryJsonScheme:
         return self.__file_op_class.load_file()
     
+    @property
+    def control_map(self) -> dt.ControlMap:
+        return self.__cls.compiled_program.control_map
+    
+    @property
+    def type_hints(self) -> dt.ControlMap:
+        return self.__cls.compiled_program.type_hints
+    
     def add_custom_controls(self, names: Sequence[tuple[str, dt.ControlType]]) -> NoReturn:
         name: str
         control: dt.ControlType
         
         for name, control in names:
-            self.__cls.compiled_program.control_map[name] = control
-            self.__cls.compiled_program.type_hints[name] = Tools.get_hints(control)
+            self.control_map[name] = control
+            self.type_hints[name] = Tools.get_hints(control)
                 
 
     def add_controls(self, names: Sequence[str]) -> NoReturn:
         name: str
         registered_controls: dt.ControlJsonScheme
+        func: Callable[[Any], bool] = partial(operator.contains, self.control_map)
+       
+        for name in itertools.filterfalse(func, names):
 
-        for name in names:
-            if name in self.__cls.compiled_program.control_map.keys():
-                continue
-
-            if name not in self.control_registry["Controls"]:
+            if name not in self.control_registry[ControlRegKeys.CONTROLS]:
                 raise err.ControlNotFoundError(name)
 
-            registered_controls = self.control_registry["ControlTypes"][
-                self.control_registry["Controls"].index(name)
+            registered_controls = self.control_registry[ControlRegKeys.CONTROL_TYPES][
+                self.control_registry[ControlRegKeys.CONTROLS].index(name)
             ]
 
-            self.__cls.compiled_program.type_hints[name] = utils.TypeHintSerializer.deserialize(
-                registered_controls["type_hints"]
+            self.type_hints[name] = utils.TypeHintSerializer.deserialize(
+                registered_controls[ControlRegKeys.TYPE_HINTS]
             )
             
-            self.__cls.compiled_program.control_map[name] = getattr(
-                utils.import_module(registered_controls["source"]), 
-                registered_controls["attr"]
+            self.control_map[name] = getattr(
+                utils.import_module(registered_controls[ControlRegKeys.SOURCE]), 
+                registered_controls[ControlRegKeys.ATTR]
             )
 
 
@@ -605,38 +638,48 @@ class Unpacker:
     
     def unpack(self, settings: dt.ControlSettings) -> dt.ControlSettings:
         self.settings = settings
-        self.unpack_data = settings.get("unpack", None)
+        self.unpack_data = settings.get(ControlKeys.UNPACK, None)
         self.update_del = partial(
-            Tools.update_del_dict, main_dict=self.settings, delete_key="unpack"
+            Tools.update_del_dict, main_dict=self.settings, 
+            delete_key=ControlKeys.UNPACK
         )
         self.unpacker = partial(Tools.unpack_validator, self.unpack_data)
         return self.unpack_function()
+
+    def is_map(self, data: Any) -> bool:
+        return isinstance(data, Mapping)
     
     def unpack_function(self) -> dt.ControlSettings:
         res: Any
         success: bool
 
-        if not self.unpack_data or not isinstance(self.unpack_data, Mapping):
+        if not self.unpack_data or not self.is_map(self.unpack_data):
             return self.update_del()
         
-        res, success = self.unpacker(key="code_refs", get_method=self.__renderer.get_ref, use_dict=True)
-        if success:
-            if not isinstance(res, Mapping):
-                return self.update_del()
-            return self.update_del(update_dict=res)
+        res = self.unpacker(
+            key=RefsKeys.CODE_REFS, 
+            get_method=self.__renderer.get_ref, use_dict=True
+        )
+        if res:
+            return (self.update_del(update_dict=res) 
+                if self.is_map(res) else self.update_del())
         
-        res, success = self.unpacker(key="styling", get_method=self.__renderer.style_sheet.get_style)
-        if success:
-            if not isinstance(res, Mapping):
-                return self.update_del()
-            return self.update_del(update_dict=res)
+        res = self.unpacker(
+            key=RefsKeys.STYLING, 
+            get_method=self.__renderer.style_sheet.get_style
+        )
+        if res:
+            return (self.update_del(update_dict=res) 
+                if self.is_map(res) else self.update_del())
+        return self.update_del()
 
 
 class TypeCheck:
     
     keys: Sequence[str] = [
-        "refs", "code_refs", "styling", "control_type", 
-        "call", "func", "route", "eval"
+        RefsKeys.REFS, RefsKeys.CODE_REFS, RefsKeys.STYLING, 
+        ControlKeys.CONTROL_TYPE, EventKeys.CALL, EventKeys.FUNC, 
+        EventKeys.ROUTE, EventKeys.EVAL
     ]
     
     @classmethod
@@ -652,10 +695,7 @@ class TypeCheck:
     def clean_list(cls, data: Sequence) -> Sequence:
         return list(
             itertools.filterfalse(
-                partial(
-                    cls.list_filter, 
-                    keys=cls.keys
-                ), 
+                partial(cls.list_filter,  keys=cls.keys), 
                 data
             )
         )

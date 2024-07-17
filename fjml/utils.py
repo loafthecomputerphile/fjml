@@ -9,8 +9,8 @@ from typing import (
     TYPE_CHECKING,
     get_type_hints
 )
-from functools import lru_cache
-import importlib, inspect, os, io, json
+from functools import lru_cache, partial
+import importlib, inspect, os, io, json, operator
 import errno, dill, base64, copy, lzma, types
 
 from flet import Control
@@ -19,22 +19,48 @@ from .constants import (
     NULL, CONTROL_REGISTRY_PATH, EMPTY_REGISTRY_FILE
 )
 from .error_types import RegistryFileNotFoundError
-from . import object_enums as onums
+from .object_enums import *
 if TYPE_CHECKING:
     from . import data_types as dt
     from .parsers.renderer import Renderer
 
 
-@lru_cache(8)
+@lru_cache(16)
 def import_module(name: str, package=None) -> types.ModuleType:
     return importlib.import_module(name, package)
+
+
+class TypeInstances:
+    
+    
+    def is_map(data: Any) -> bool:
+        return isinstance(data, Mapping)
+    
+    def is_seq(data: Any) -> bool:
+        return isinstance(data, Sequence)
+    
+    def is_str(data: Any) -> bool:
+        return isinstance(data, str)
+    
+    def is_int(data: Any) -> bool:
+        return isinstance(data, int)
+    
+    def is_float(data: Any) -> bool:
+        return isinstance(data, float)
+    
+    def is_float(data: Any) -> bool:
+        return isinstance(data, float)
+    
+    def is_x(data: Any, x: Type) -> bool:
+        return isinstance(data, x)
+
 
 class ObjectSource:
     __slots__ = ["obj", "source", "is_class"]
     def __init__(self, obj: Any, source: str = "") -> NoReturn:
         self.obj: Any = obj
         self.source: str = source
-        self.is_class = False
+        self.is_class: bool = False
         
         if not self.source:
             self.source = self.obj.__module__
@@ -48,8 +74,7 @@ class Utilities:
     
     @staticmethod
     def mass_any_contains(data: Sequence, obj: Any) -> bool:
-        item: Any
-        return any([item in obj for item in data])
+        return any(map(partial(operator.contains, obj), data))
     
     @staticmethod
     def control_to_registry_interface(
@@ -96,21 +121,19 @@ class Utilities:
 
     @staticmethod
     def get_object_args(func: Callable[[...], Any]) -> Sequence[str]:
-        if not callable(func):
-            return []
-        
-        sig: inspect.Signature = inspect.signature(func)
-        return [param.name for param in sig.parameters.values()]
+        return [] if not callable(func) else list(
+            map(
+                operator.attrgetter("name"), 
+                inspect.signature(func).parameters.values()
+            )
+        )
 
     @staticmethod
     def valid_param_filter(settings: dt.ControlSettings, valid_settings: Sequence[str]) -> dt.ControlSettings:
-        key: str
-        value: Any
-        
-        if not valid_settings:
-            return settings
-        
-        return dict(filter(lambda x: x[0] in valid_settings, settings.items()))
+        x: tuple[str, Any]
+        return {} if not valid_settings else dict(
+            filter(lambda x: x[0] in valid_settings, settings.items())
+        )
 
     @staticmethod
     def get_keys_with_dict(settings: dt.JsonDict) -> Sequence[str]:
@@ -207,29 +230,25 @@ class Utilities:
 
     @staticmethod
     def get_init_parameters(instance: Any) -> Mapping:
-        param: Any
-        param_name: str
-        params: Mapping = {}
+        x: tuple[str, Any]
         
-        init_method = instance.__init__
-        init_signature: inspect.Signature = inspect.signature(init_method)
-        
-        for param_name, param in init_signature.parameters.items():
-            if param_name != "self":  # Exclude 'self'
-                params[param_name] = getattr(instance, param_name, param)
-        
-        return params
+        return dict(
+            map(
+                lambda x: (x, getattr(instance, *x)), 
+                filter(
+                    lambda x: x[0] != "self", 
+                    inspect.signature(instance.__init__).parameters.items()
+                )
+            )
+        )
     
     @staticmethod
     def multi_dict_get(data: Mapping, items: Sequence[str]) -> Any:
         result: Any
         item: str
-        
         for item in items:
             result = data.get(item, None)
-            if result != None:
-                return result
-        
+            if data: return result
 
     @staticmethod
     def update_del_dict(main_dict: Mapping, delete_key: str, update_dict: Mapping = {}) -> Mapping:
@@ -240,25 +259,22 @@ class Utilities:
         return main_dict
 
     @staticmethod
-    def unpack_validator(unpack_dict: Mapping, key: str, get_method: Callable, use_dict: bool = False) -> tuple[dt.JsonDict, bool]:
-        value: Any = unpack_dict.get(key, NULL)
-        if value == NULL or not isinstance(value, str):
-            return {}, False
+    def unpack_validator(unpack_dict: Mapping, key: str, get_method: Callable, use_dict: bool = False) -> dt.JsonDict:
+        value: Any = unpack_dict.get(key, None)
+        if not value or not isinstance(value, str):
+            return {}
         
         res: Any = get_method(unpack_dict if use_dict else value)
-        if not isinstance(res, Mapping):
-            return {}, False
         
-        return res, True
+        return res if isinstance(res, Mapping) else {}
     
     @staticmethod
     def validate_index(
         data: Mapping, depth_count: int, is_ref: bool = False
     ) -> str:
-        types: str = data.get(onums.ControlKeys.CONTROL_TYPE, None)
-        if is_ref and types != onums.LoopKeys.LOOP_INDEX:
+        if is_ref and data.get(ControlKeys.CONTROL_TYPE, None) != LoopKeys.LOOP_INDEX:
             return NULL
-        val: Any = data.get(onums.LoopKeys.IDX, None)
+        val: Any = data.get(LoopKeys.IDX, None)
         if not val:
             return NULL
         if not is_sequence_not_str(val):
@@ -268,16 +284,18 @@ class Utilities:
 
     @staticmethod
     def refs_type(data: Mapping) -> str:
-        if data.get(onums.RefsKeys.REFS, None):
-            return onums.RefsKeys.REFS
-        elif data.get(onums.RefsKeys.CODE_REFS, None):
-            return onums.RefsKeys.CODE_REFS
+        if RefsKeys.REFS in data:
+            return RefsKeys.REFS
+        elif RefsKeys.CODE_REFS in data:
+            return RefsKeys.CODE_REFS
         return ""
 
     @staticmethod
     def parse_reference(cls: Renderer, content: Mapping) -> Any:
         return cls.get_ref(
-            Utilities.search_and_sanitize(content, cls.depth_count, cls.loop_values)
+            Utilities.search_and_sanitize(
+                content, cls.depth_count, cls.loop_values
+            )
         ) if isinstance(content, Mapping) else None
 
 
@@ -286,7 +304,7 @@ class Utilities:
         if Utilities.validate_index(data, depth_count) == NULL:
             return 
         
-        idx: int = data[onums.LoopKeys.IDX]
+        idx: int = data[LoopKeys.IDX]
         vals: Any = loop_values[idx[0]]
         
         return vals[idx[1]] if is_sequence_not_str(vals) else vals
@@ -298,7 +316,7 @@ class Utilities:
     ) -> Sequence:
 
         if isinstance(iterator_value, Mapping):
-            value: Any = iterator_value.get(onums.LoopKeys.RANGE, NULL)
+            value: Any = iterator_value.get(LoopKeys.RANGE, NULL)
             if is_sequence_not_str(value):
                 if len(value) > 3:
                     value = value[:3]
@@ -308,9 +326,9 @@ class Utilities:
                     return range(*value)
                 return []
 
-            if iterator_value.get(onums.RefsKeys.CODE_REFS, NULL) == NULL:
+            if RefsKeys.CODE_REFS not in iterator_value:
                 return []
-            if iterator_value.get(onums.RefsKeys.REFS, NULL) != NULL:
+            if RefsKeys.REFS in iterator_value:
                 return []
             
             result: Sequence = cls.get_ref(iterator_value)
@@ -335,12 +353,12 @@ class Utilities:
         key: str
         item: Any
         value: Any
-
+        
         if isinstance(data, Mapping):
             result = {}
             for key, value in data.items():
                 if isinstance(value, Mapping):
-                    if value.get(onums.ControlKeys.CONTROL_TYPE) == onums.LoopKeys.LOOP_INDEX:
+                    if value.get(ControlKeys.CONTROL_TYPE, "") == LoopKeys.LOOP_INDEX:
                         new_value = Utilities.sanitize(value, depth_count, loop_values)
                         result[key] = new_value
                     else:

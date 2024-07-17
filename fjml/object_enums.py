@@ -19,6 +19,7 @@ class RefsKeys(StrEnum):
     REFS: str = "refs"
     CODE_REFS: str = "code_refs"
     STYLING: str = "styling"
+    GROUP: str = "group"
 
 
 class ControlKeys(StrEnum):
@@ -26,7 +27,7 @@ class ControlKeys(StrEnum):
     VAR_NAME: str = "var_name"
     CONTROL_TYPE: str = "control_type"
     SETTINGS: str = "settings"
-    UNPACK: str = "unpack"
+    UNPACK: str = "_unpack"
     ATTR: str = 'attr'
     LOOP: str = "loop"
 
@@ -47,6 +48,13 @@ class MarkupKeys(StrEnum):
     IMPORTS: str = "Imports"
     CONTROLS: str = "Controls"
     UI: str = "UI"
+    SKIP: str = "<SKIP>"
+
+
+class PropertyKeys(StrEnum):
+    GET: str = "get"
+    SET: str = "set"
+    DEL: str = "del"
 
 
 class LoopKeys(StrEnum):
