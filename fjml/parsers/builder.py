@@ -1,6 +1,7 @@
 from __future__ import annotations
 from functools import partial
 from types import MethodType
+import operator
 from typing import (
     Any,
     Callable,
@@ -15,6 +16,7 @@ except:
 
 import flet as ft
 
+from ..object_enums import *
 from .renderer import Renderer
 from .. import (
     error_types as err, 
@@ -35,39 +37,36 @@ class Backend:
     )
     
     def __init__(self, compiled_program: dt.CompiledModel, page: ft.Page) -> NoReturn:
-        self.__block_assignments: dt.BlockAssignment = dt.BlockAssignment()
-        self.compiled_program: opc.CompiledModel = compiled_program
+        self.preserve_control_bucket: opc.PreserveControlContainer
         self.view_operations: opc.ViewOperations
         self._importer: Callable[[Backend], NoReturn]
         self._page_setup: Callable[[Backend], NoReturn]
         self.dict_to_control: Callable[[Renderer, dt.ControlDict], dt.ControlType]
+        self.compiled_program: opc.CompiledModel = compiled_program
+        self.eval_locals: opc.EvalLocalData = opc.EvalLocalData()
+        self.page: ft.Page = page
         self.__renderer: Renderer = None
-        self.__is_setup: bool = False
         self.__initialize: bool = False
         self.tools: utils.Utilities = utils.Utilities()
         self.style_sheet: opc.StyleSheet = compiled_program.style_sheet
-        self.page: ft.Page = page
         self.setup_functions: opc.SetupFunctions = opc.SetupFunctions(self)
         self.dependency_bucket: opc.ControlDependencies = compiled_program.dependencies
-        self.preserve_control_bucket: opc.PreserveControlContainer = (
-            opc.PreserveControlContainer()
-        )
+        self.preserve_control_bucket = opc.PreserveControlContainer()
         self.object_bucket: opc.ObjectContainer = opc.ObjectContainer()
         self.property_bucket: opc.PropertyContainer = opc.PropertyContainer(
             self, self.tools
         )
         self.program_name: str = compiled_program.program_name
+        self.eval_locals.mass_add({"ft":ft, "self":self})
     
-    def initialize(self, event_class: dt.EventContainer) -> ft.Page:
+    def initialize(self) -> ft.Page:
         if not self.__initialize:
-            self.__add_methods(event_class)
-            del event_class
+            self.__add_methods(self.compiled_program.methods)
             self.setup_functions.call_functions()
             self.__renderer = Renderer(self)
             self.dict_to_control = self.__renderer.ui_parser
             self.view_operations = opc.ViewOperations(self, self.__renderer)
             self.style_sheet.setter(self.__renderer)
-            self.__block_assignments.switch_primary()
             self._importer()
             self._page_setup()
             self.__renderer.init_controls()
@@ -78,7 +77,6 @@ class Backend:
                     "title":self.program_name,
                 }
             )
-            self.__block_assignments.switch_secondary()
             self.__initialize = True
             self.update()
             return self.page
@@ -114,21 +112,19 @@ class Backend:
 
     @property
     def get_routes(self) -> Sequence[str]:
-        view: ft.View
-        return [view.route for view in self.page.views]
+        return list(map(operator.attrgetter("route"), self.page.views))
     
     def __add_make_view(self, route: str) -> NoReturn:
         if route in self.get_routes:
             del self.page.views[self.get_routes.index(route)]
-        
+            
         self.view_operations.add_view(
             self.view_operations.make_view(self.__renderer._ui[route])
         )
         self.update()
     
-    def __valid_route(self, route: str, include_base: bool = False) -> bool:
-        base_condition: bool = (route != "/") if not include_base else True
-        return self.get_current_route == route and base_condition
+    def __valid_route(self, route: str) -> bool:
+        return self.get_current_route == route and route != "/"
     
     async def __create_ui(self, e: ft.RouteChangeEvent) -> NoReturn:
         route: str
@@ -137,9 +133,8 @@ class Backend:
             raise InitializationError()
         
         self.__add_make_view("/")
-        for route in self.__renderer._ui:
-            if self.__valid_route(route):
-                self.__add_make_view(route)
+        for route in filter(self.__valid_route, self.__renderer._ui):
+            self.__add_make_view(route)
     
     def get_attr(self, attr_name: str, default: Any = None) -> Any:
         return getattr(self, attr_name, None)
@@ -152,7 +147,6 @@ class Backend:
     
     def mass_assign(self, attribute_map: Mapping) -> NoReturn:
         data: tuple[str, Any]
-        
         for data in attribute_map.items():
             if self.has_attr(data[0]): self.set_attr(*data)
     
@@ -170,10 +164,3 @@ class Backend:
     @property
     def session(self) -> Mapping:
         return self.page.session
-    
-    def __setattr__(self, key: str, value: Any) -> NoReturn:
-        if key in constants.PRIMARY_STAGNANT_KEYS and self.__block_assignments.PRIMARY:
-            raise TypeError(f"Class variable, 'self.{key}' cannot be re-assigned.")
-        if key in constants.STAGNANT_KEYS and self.__block_assignments.SECONDARY:
-            raise TypeError(f"Class variable, 'self.{key}' cannot be re-assigned.")
-        super().__setattr__(key, value)

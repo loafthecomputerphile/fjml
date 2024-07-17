@@ -7,7 +7,8 @@ try:
 except:
     from typing_extensions import NoReturn
 
-from .. import data_types as dt, utils, object_enums as onums
+from ..object_enums import *
+from .. import data_types as dt, utils
 
 Tools: utils.Utilities = utils.Utilities()
 
@@ -33,7 +34,7 @@ class ControlRegistryOperations:
         model: dt.ControlRegistryModel
 
         for i, model in enumerate(data):
-            if name == model[onums.ControlRegKeys.NAME]:
+            if name == model[ControlRegKeys.NAME]:
                 return i
         return -1
 
@@ -45,11 +46,11 @@ class ControlRegistryOperations:
         name: str
         for i, name in enumerate(controls):
             try:
-                if name != control_types[i][onums.ControlRegKeys.NAME]:
+                if name != control_types[i][ControlRegKeys.NAME]:
                     control_types = swap_positions(
                         control_types,
                         i,
-                        controls.index(control_types[i][onums.ControlRegKeys.NAME]),
+                        controls.index(control_types[i][ControlRegKeys.NAME]),
                     )
             except IndexError as e:
                 raise IndexError(
@@ -67,9 +68,9 @@ class ControlRegistryOperations:
             utils.RegistryOperations.load_file()
         )
 
-        controls: Sequence[str] = controls_registry[onums.ControlRegKeys.CONTROLS]
+        controls: Sequence[str] = controls_registry[ControlRegKeys.CONTROLS]
         control_types: Sequence[dt.ControlRegistryModel] = (
-            controls_registry[onums.ControlRegKeys.CONTROL_TYPES]
+            controls_registry[ControlRegKeys.CONTROL_TYPES]
         )
 
         try:
@@ -80,8 +81,8 @@ class ControlRegistryOperations:
         del control_types[idx]
         del controls[idx]
 
-        controls_registry[onums.ControlRegKeys.CONTROL_TYPES] = control_types
-        controls_registry[onums.ControlRegKeys.CONTROLS] = controls
+        controls_registry[ControlRegKeys.CONTROL_TYPES] = control_types
+        controls_registry[ControlRegKeys.CONTROLS] = controls
 
         utils.RegistryOperations.save_file(controls_registry)
 
@@ -93,22 +94,22 @@ class ControlRegistryOperations:
     ) -> dt.ControlRegistryJsonScheme:
         key: str
 
-        for key in [onums.ControlRegKeys.CONTROLS, onums.ControlRegKeys.CONTROL_TYPES]:
+        for key in [ControlRegKeys.CONTROLS, ControlRegKeys.CONTROL_TYPES]:
             reg1[key].extend(reg2[key])
         return reg1
 
     @classmethod
     def clean_results(cls, data: CleanFuncParams) -> dt.ControlRegistryJsonScheme:
         if data.indexes:
-            data.registry_dict[onums.ControlRegKeys.CONTROL_TYPES] = [
+            data.registry_dict[ControlRegKeys.CONTROL_TYPES] = [
                 v for i, v in enumerate(data.control_types) if i not in data.indexes
             ]
-            data.registry_dict[onums.ControlRegKeys.CONTROLS] = [
+            data.registry_dict[ControlRegKeys.CONTROLS] = [
                 v for i, v in enumerate(data.controls) if i not in data.indexes
             ]
         else:
-            data.registry_dict[onums.ControlRegKeys.CONTROL_TYPES] = data.control_types
-            data.registry_dict[onums.ControlRegKeys.CONTROLS] = data.controls
+            data.registry_dict[ControlRegKeys.CONTROL_TYPES] = data.control_types
+            data.registry_dict[ControlRegKeys.CONTROLS] = data.controls
         return data.registry_dict
 
     @classmethod
@@ -125,20 +126,20 @@ class ControlRegistryOperations:
         model_dict: Mapping
         settings: Sequence[str]
         controls_registry: dt.ControlRegistryJsonScheme = {
-            onums.ControlRegKeys.CONTROLS: [],
-            onums.ControlRegKeys.CONTROL_TYPES: [],
+            ControlRegKeys.CONTROLS: [],
+            ControlRegKeys.CONTROL_TYPES: [],
         }
 
         if edit_registry:
             controls_registry = utils.RegistryFileOperations.load_file()
 
-        controls = deepcopy(controls_registry[onums.ControlRegKeys.CONTROLS])
-        control_types = deepcopy(controls_registry[onums.ControlRegKeys.CONTROL_TYPES])
+        controls = deepcopy(controls_registry[ControlRegKeys.CONTROLS])
+        control_types = deepcopy(controls_registry[ControlRegKeys.CONTROL_TYPES])
 
         for models in control_registry_models:
             name = models.name
             model_dict = models.return_dict
-            del model_dict[onums.ControlRegKeys.CONTROL]
+            del model_dict[ControlRegKeys.CONTROL]
 
             if name in controls:
                 if len(control_types) == 0:
@@ -151,10 +152,10 @@ class ControlRegistryOperations:
                     continue
                 if idx != actual_idx:
                     control_types = swap_positions(control_types, idx, actual_idx)
-                settings = control_types[idx][onums.ControlRegKeys.VALID_SETTINGS]
-                if settings != model_dict[onums.ControlRegKeys.VALID_SETTINGS]:
-                    control_types[idx][onums.ControlRegKeys.VALID_SETTINGS] = (
-                        model_dict[onums.ControlRegKeys.VALID_SETTINGS]
+                settings = control_types[idx][ControlRegKeys.VALID_SETTINGS]
+                if settings != model_dict[ControlRegKeys.VALID_SETTINGS]:
+                    control_types[idx][ControlRegKeys.VALID_SETTINGS] = (
+                        model_dict[ControlRegKeys.VALID_SETTINGS]
                     )
             else:
                 controls.append(name)
@@ -170,7 +171,7 @@ class ControlRegistryOperations:
                 control_types=control_types,
                 indexes=[
                     i for i, types in enumerate(control_types)
-                    if types[onums.ControlRegKeys.NAME] not in controls
+                    if types[ControlRegKeys.NAME] not in controls
                 ],
             )
         )

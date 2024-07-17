@@ -17,11 +17,10 @@ from typing import (
     Mapping
 )
 
-
 import flet as ft
 
-from . import utils, object_enums as onums
-
+from . import utils
+from .object_enums import *
 if TYPE_CHECKING:
     from . import operation_classes as opc
 
@@ -87,7 +86,10 @@ class RouteDict(TypedDict):
 
 ImportDict: TypedDict = TypedDict(
     'ImportDict', 
-    {'source': Union[str, Sequence[str]], 'from': NotRequired[str]}
+    {
+        'source': Union[str, Sequence[str]], 
+        'from': NotRequired[str]
+    }
 )
 
 
@@ -163,8 +165,10 @@ class ParamGenerator:
     def save_program(self, compiled_program: CompiledModel) -> NoReturn:
         utils.CompiledFileHandler.save(self.compile_path, compiled_program)
     
-    def parse_extentions(self, global_data):
-        self.header.parse_extentions(global_data)
+    def parse_extentions(self):
+        self.header.parse_extentions(
+            inspect.currentframe().f_back.f_back.f_globals
+        )
         self.custom_controls = self.header.extentions
         self.action_code = self.header.action
     
@@ -180,7 +184,7 @@ class ParamGenerator:
         with open(ui_code_path, "r") as file:
             self.ui_code = json.load(file)
             self.validate_ui_format()
-            self.header.load_dict(self.ui_code[onums.MarkupKeys.HEADER])
+            self.header.load_dict(self.ui_code[MarkupKeys.HEADER])
         
         self.program_name = self.header.program_name
         
@@ -252,9 +256,8 @@ class ControlRegistryModel:
         )
 
     def generate_args(self, is_enum: bool = False) -> Sequence[str]:
-        if callable(self.source.obj):
-            return Tools.get_object_args(self.source.obj)
-        return []
+        return (Tools.get_object_args(self.source.obj) 
+            if callable(self.source.obj) else [])
 
 
 class BlockAssignment:
@@ -265,22 +268,46 @@ class BlockAssignment:
         self.__SECONDARY: bool = False
     
     @property
-    def PRIMARY(self):
+    def PRIMARY(self) -> bool:
         return self.__PRIMARY
-    
+        
     @property
-    def SECONDARY(self):
+    def SECONDARY(self) -> bool:
         return self.__SECONDARY
 
-    def switch_primary(self):
+    def switch_primary(self) -> NoReturn:
         if self.__PRIMARY:
             return
         self.__PRIMARY = True
     
-    def switch_secondary(self):
+    def switch_secondary(self) -> NoReturn:
         if self.__SECONDARY:
             return
         self.__SECONDARY = True
+    
+    def __in_class_scope(self) -> bool:
+        return isinstance(
+            inspect.currentframe().f_back.f_back.f_locals.get("self", None), 
+            type(self)
+        )
+    
+    def __setattr__(self, name: str, value: Any) -> NoReturn:
+        block = [
+            "_BlockAssignment__SECONDARY", "_BlockAssignment__PRIMARY", 
+            "__in_class_scope"
+        ]
+        if name in block and not self.__in_class_scope():
+            return
+        super().__setattr__(name, value)
+    
+    def __getattribute__(self, name: str) -> Any:
+        block = [
+            "_BlockAssignment__SECONDARY", "_BlockAssignment__PRIMARY", 
+            "__in_class_scope"
+        ]
+        if name in block and not self.__in_class_scope():
+            return
+        return super().__getattribute__(name)
 
 
 class CompiledModel:
@@ -339,17 +366,17 @@ class Header:
         
         if not isinstance(self.action_import, Mapping):
             self.action = BlankEventContainer()
-        elif onums.ImportKeys.IMPORT not in self.action_import:
+        elif ImportKeys.IMPORT not in self.action_import:
             self.action = BlankEventContainer()
-        elif onums.ImportKeys.FROM not in self.action_import:
+        elif ImportKeys.FROM not in self.action_import:
             self.action = BlankEventContainer()
             
         if self.action:
             return
         
         self.action = Importer(global_data).run_import(
-            self.action_import[onums.ImportKeys.FROM],
-            self.action_import[onums.ImportKeys.IMPORT]
+            self.action_import[ImportKeys.FROM],
+            self.action_import[ImportKeys.IMPORT]
         )
         del self.action_import
         
@@ -364,16 +391,16 @@ class Header:
             ext = []
             if not isinstance(data, Mapping):
                 continue
-            if onums.ImportKeys.IMPORT not in data or onums.ImportKeys.FROM not in data:
+            if ImportKeys.IMPORT not in data or ImportKeys.FROM not in data:
                 continue
             
-            if not isinstance(data.get(onums.ImportKeys.USING, None), str):
-                data[onums.ImportKeys.USING] = ""
+            if not isinstance(data.get(ImportKeys.USING, None), str):
+                data[ImportKeys.USING] = ""
             
-            if not isinstance(data.get(onums.ImportKeys.FROM, None), str):
+            if not isinstance(data.get(ImportKeys.FROM, None), str):
                 continue
             
-            imports = data.get(onums.ImportKeys.IMPORT, None)
+            imports = data.get(ImportKeys.IMPORT, None)
             if isinstance(imports, str):
                 ext.append(imports)
             elif isinstance(imports, Sequence):
@@ -383,10 +410,10 @@ class Header:
             
             result.append(
                 UIImports(
-                    data[onums.ImportKeys.FROM], 
+                    data[ImportKeys.FROM], 
                     ext, 
                     global_data, 
-                    data[onums.ImportKeys.USING]
+                    data[ImportKeys.USING]
                 )
             )
         
@@ -439,11 +466,7 @@ class Importer:
         return loc["module"]
     
     def run_import(self, module_name: str, attr: str) -> Any:
-        return getattr(
-            self.importer(module_name),
-            attr,
-            None
-        )
+        return getattr(self.importer(module_name), attr, None)
 
 
 class UIImports:
@@ -483,7 +506,10 @@ class UIImports:
 
 
 class EventContainer(metaclass=ABCMeta):
-
+    
+    client_storage: dict[str, Any]
+    session: dict[str, Any]
+    eval_locals: opc.EvalLocalData
     style_sheet: opc.StyleSheet
     object_bucket: opc.ObjectContainer
     view_operations: opc.ViewOperations

@@ -1,23 +1,23 @@
 from typing import Union, Any, Mapping, Dict, Sequence, List, get_origin, get_args, Tuple, Set
 from enum import Enum
+from .utils import is_sequence_not_str
 
 def _origin(data: Any):
     if isinstance(data, type):
         return data
     try:
         origin_res = get_origin(data)
-        if origin_res:
-            return origin_res
-        else:
-            return type(None)
+        return origin_res if origin_res else type(None)
     except:
         return type(None)
 
 def _new_isinstance(duck_type: type,  type_to_check: type) -> bool:
     org = _origin(duck_type)
-    if isinstance(type_to_check, Sequence) and not isinstance(type_to_check, str):
-        return org in type_to_check
-    return org == type_to_check
+    return (
+        org in type_to_check 
+        if is_sequence_not_str(type_to_check)
+        else org == type_to_check
+    )
 
 
 _Sequences: tuple[type] = (list, List, Tuple, Set, tuple, set, Sequence)
@@ -70,14 +70,9 @@ def type_check(value, dtype, depth: int=0) -> bool:
         return False
     
     if _new_isinstance(dtype, (int, float)):
-        if isinstance(value, (int, float)):
-            return True
-        return False
+        return isinstance(value, (int, float))
     
     if isinstance(dtype, type):
         org = dtype
     
-    if isinstance(value, org) or issubclass(dtype, Enum): # isn'dtype a metatype, let's just check it
-        return True
-    
-    return False
+    return isinstance(value, org) or issubclass(dtype, Enum)

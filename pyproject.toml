@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A small example package"
 readme = "README.md"
-keywords = ["flet", "gui"]
+keywords = ["flet", "gui", "markup language"]
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3.8",
@@ -19,8 +19,8 @@ classifiers = [
 ]
 dependencies = [
   "flet>=0.22.0",
-  "nest_asyncio>=1.5.9",
-  "typing_extensions>=4.11.0"
+  "typing_extensions>=4.11.0",
+  "dill>=0.3.8"
 ]
 
 [project.scripts]
