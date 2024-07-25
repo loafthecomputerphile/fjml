@@ -1,13 +1,12 @@
 from __future__ import annotations
-import io, json, types, inspect, os, enum, importlib
+import io, json, types, inspect, os, enum
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import (
     Any,
     TypedDict,
     Union,
     TypeAlias,
-    NoReturn,
     Callable,
     Awaitable,
     TYPE_CHECKING,
@@ -17,20 +16,28 @@ from typing import (
     Mapping
 )
 
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
 import flet as ft
 
 from . import utils
 from .object_enums import *
+
 if TYPE_CHECKING:
     from . import operation_classes as opc
 
+
 Tools: utils.Utilities = utils.Utilities()
 
+CallableInstance: TypeAlias = Any
 JsonDict: TypeAlias = dict[str, Any]
 IndexType: TypeAlias = Union[str, int, None]
 TypeHints: TypeAlias = Mapping[str, Type]
 TypeHintMap: TypeAlias = Mapping[str, TypeHints]
-ControlType: TypeAlias = Union[ft.Control, enum.Enum, types.FunctionType]
+ControlType: TypeAlias = Union[ft.Control, enum.Enum, types.FunctionType, CallableInstance]
 ControlMap: TypeAlias = dict[str, ControlType]
 
 class ControlRegisterInterface(TypedDict):
@@ -100,19 +107,11 @@ class UserInterfaceDict(TypedDict):
     UI: Sequence[RouteDict]
 
 
-class UIViews:
-    __slots__ = ["route", "settings"]
-    def __init__(self, route: str, settings: ControlSettings = {}) -> NoReturn:
-        self.route: str = route
-        self.settings: ControlSettings = settings
-
-UIViewMap: TypeAlias = Mapping[str, UIViews]
-
 
 class ControlModel:
     __slots__ = [
         "name", "control_name", "bundle_name", 
-        "control", "settings", "valid_settings"
+        "control", "settings"
     ]
     
     def __init__(
@@ -123,9 +122,31 @@ class ControlModel:
         self.name: str = name
         self.control_name: str = control_name
         self.control: ControlType = control
-        self.settings: ControlSettings = settings
-        self.valid_settings: Sequence[str] = valid_settings
+        valid_settings.append(ControlKeys.UNPACK)
+        self.settings: ControlSettings = Tools.valid_param_filter(
+            settings, valid_settings
+        )
+        
+    def build(self, parser: Callable[[...], ControlSettings]) -> ControlType:
+        return self.control(
+            **parser(
+                self.settings,
+                types=self.control_name,
+                ignore=True
+            )
+        ) if callable(self.control) else self.control
+        
 
+class UIViews:
+    __slots__ = ["route", "settings"]
+    def __init__(self, route: str, settings: ControlSettings = {}, valid_settings: Sequence[str] = []) -> NoReturn:
+        ...
+    
+    def build(self, parser: Callable[[...], ControlSettings]) -> ft.View:
+        ...
+
+
+UIViewMap: TypeAlias = Mapping[str, UIViews]
 
 ParsedUserInterface: TypeAlias = dict[str, UIViews]
 ParsedControls: TypeAlias = dict[str, ControlModel]
@@ -133,11 +154,11 @@ AnyCallable: TypeAlias = Union[Callable[[...], Any], Awaitable[Callable[[...], A
 
 
 class ParamGenerator:
-    __slots__ = [
+    __slots__ = (
         "header", "program_path", "custom_controls", "style_sheet", 
         "imports_path", "ui_code", "compile_path", "program_name",
-        "extentions", "action_code"
-    ]
+        "extensions", "action_code"
+    )
     
     def __init__(self, program_path: str, compile_path: str) -> NoReturn:
         self.custom_controls: Sequence[ControlJsonScheme]
@@ -165,11 +186,11 @@ class ParamGenerator:
     def save_program(self, compiled_program: CompiledModel) -> NoReturn:
         utils.CompiledFileHandler.save(self.compile_path, compiled_program)
     
-    def parse_extentions(self):
-        self.header.parse_extentions(
+    def parse_extensions(self):
+        self.header.parse_extensions(
             inspect.currentframe().f_back.f_back.f_globals
         )
-        self.custom_controls = self.header.extentions
+        self.custom_controls = self.header.extensions
         self.action_code = self.header.action
     
     def setup(self) -> NoReturn:
@@ -256,8 +277,8 @@ class ControlRegistryModel:
         )
 
     def generate_args(self, is_enum: bool = False) -> Sequence[str]:
-        return (Tools.get_object_args(self.source.obj) 
-            if callable(self.source.obj) else [])
+        obj: Any = self.source.obj
+        return Tools.get_object_args(obj) if callable(obj) else []
 
 
 class BlockAssignment:
@@ -342,13 +363,12 @@ class Header:
     program_name: str = field(default="")
     import_folder: str = field(default="")
     style_sheet_name: str = field(default="")
-    extentions: list[Mapping] = field(default_factory=list)
+    extensions: list[Mapping] = field(default_factory=list)
     
     def __post_init__(self) -> NoReturn:
-        func: Callable = lambda x: x[:2] != "__"
         self.action: Union[Type[EventContainer], None] = None
         self.attrs: Sequence[str] = list(
-            filter(func, dir(self))
+            filter(lambda x: x[:2] != "__", dir(self))
         )
     
     def load_dict(self, data: JsonDict) -> NoReturn:
@@ -381,13 +401,13 @@ class Header:
         del self.action_import
         
     
-    def parse_extentions(self, global_data: Mapping) -> NoReturn:
+    def parse_extensions(self, global_data: Mapping) -> NoReturn:
         self.get_file(global_data)
         result: Sequence[UIImports] = []
         ext: Sequence[JsonDict]
         imports: Union[Sequence, str]
         
-        for data in self.extentions:
+        for data in self.extensions:
             ext = []
             if not isinstance(data, Mapping):
                 continue
@@ -417,10 +437,10 @@ class Header:
                 )
             )
         
-        self.extentions = result
+        self.extensions = result
 
 
-class ThirdPartyExtention:
+class ThirdPartyExtension:
     
     __slots__ = ["module", "imports", "prefix"]
     
@@ -451,6 +471,8 @@ class ThirdPartyExtention:
 
 
 class Importer:
+    
+    __slots__ = ("outer_global")
     
     def __init__(self, outer_global: Mapping):
         self.outer_global: Mapping = outer_global
@@ -505,10 +527,12 @@ class UIImports:
         return result
 
 
+ExtensionType: TypeAlias = Union[ThirdPartyExtension, UIImports]
+
 class EventContainer(metaclass=ABCMeta):
     
-    client_storage: dict[str, Any]
-    session: dict[str, Any]
+    client_storage: ft.Page.client_storage
+    session: ft.Page.session
     eval_locals: opc.EvalLocalData
     style_sheet: opc.StyleSheet
     object_bucket: opc.ObjectContainer
@@ -528,6 +552,7 @@ class EventContainer(metaclass=ABCMeta):
     
 
 class BlankEventContainer(EventContainer):
+    
     def _page_setup(self) -> NoReturn: 
         ...
 

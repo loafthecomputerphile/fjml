@@ -1,14 +1,10 @@
-from typing import NoReturn, Optional, Callable, Final, Any
+from typing import Optional, Callable, Final, Any
 
-from flet import (
-    Container,
-    Row,
-    Control,
-    ControlEvent,
-    MainAxisAlignment,
-    CrossAxisAlignment,
-    ScrollMode,
-)
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
 import flet as ft
 from functools import cache
 
@@ -78,13 +74,13 @@ class CustomResponsiveRow(SizeAwareControl):
 
     def __init__(
         self,
-        controls: list[Control] = [],
+        controls: list[ft.Control] = [],
         columns: int = 12,
         spacing: int = 10,
         run_spacing: int = 10,
-        scroll: ScrollMode = ScrollMode.ALWAYS,
-        alignment: MainAxisAlignment = MainAxisAlignment.START,
-        vertical_alignment: CrossAxisAlignment = CrossAxisAlignment.START,
+        scroll: ft.ScrollMode = ft.ScrollMode.ALWAYS,
+        alignment: ft.MainAxisAlignment = ft.MainAxisAlignment.START,
+        vertical_alignment: ft.CrossAxisAlignment = ft.CrossAxisAlignment.START,
         max_height: int = -1,
         min_height: int = -1,
         **kwargs,
@@ -93,21 +89,21 @@ class CustomResponsiveRow(SizeAwareControl):
         self.max_height: int = max_height
         self.min_height: int = min_height
         self.resize_interval: int = 10
-        self.scroll: ScrollMode = scroll
+        self.scroll: ft.ScrollMode = scroll
         self.columns: int = columns
         self.spacing: int = spacing
         self.controls: list[Control] = [
             self.preset_height(control) for control in controls
         ]
-        self.vertical_alignment: CrossAxisAlignment = vertical_alignment
-        self.alignment: MainAxisAlignment = alignment
+        self.vertical_alignment: ft.CrossAxisAlignment = vertical_alignment
+        self.alignment: ft.MainAxisAlignment = alignment
         self.run_spacing: int = run_spacing
         self.on_resize: Optional[Callable[[ControlEvent], NoReturn]] = (
             self.__handle_canvas_resize
         )
 
-        self.content: Container = Container(
-            Row(
+        self.content: ft.Container = ft.Container(
+            ft.Row(
                 controls=self.controls,
                 spacing=self.spacing,
                 run_spacing=self.run_spacing,
@@ -120,14 +116,14 @@ class CustomResponsiveRow(SizeAwareControl):
             expand=True,
         )
 
-    def __handle_canvas_resize(self, e: ControlEvent) -> NoReturn:
+    def __handle_canvas_resize(self, e: ft.ControlEvent) -> NoReturn:
         self.size = (e.width, e.height)
         self.controls = [
             self.change_control_width(control) for control in self.controls
         ]
         e.page.update()
 
-    def change_control_width(self, control: Control) -> Control:
+    def change_control_width(self, control: ft.Control) -> ft.Control:
         control.width = return_new_width(
             self.get_width, self.columns, control.col, self.spacing
         )
@@ -143,7 +139,7 @@ class CustomResponsiveRow(SizeAwareControl):
         control.height = self.get_height
         return control
 
-    def preset_height(self, control: Control) -> Control:
+    def preset_height(self, control: ft.Control) -> ft.Control:
         try:
             control.height = 400
         except AttributeError:

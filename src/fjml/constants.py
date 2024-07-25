@@ -1,4 +1,4 @@
-from typing import Final, Any, Sequence, Mapping
+from typing import Final, Sequence, Mapping
 import pathlib as Path
 
 
@@ -53,7 +53,7 @@ IMPORT_FILE_TEXT: Final[Mapping] = {
     ]
 }
 
-USER_INTEFACE_FILE_TEXT: Final[Mapping] = {
+USER_INTERFACE_FILE_TEXT: Final[Mapping] = {
     "Header":{
         "import_folder":"extra",
         "program_name":"program",
@@ -62,7 +62,7 @@ USER_INTEFACE_FILE_TEXT: Final[Mapping] = {
             "import":"Actions",
             "from":".ui_test_program.func"
         },
-        "extentions":[]
+        "extensions":[]
     },
     "Imports": [{"source": "import1"}],
     "Controls": [],

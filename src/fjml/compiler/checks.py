@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Sequence, Any, Mapping, TYPE_CHECKING, Union
-from .object_enums import *
+from ..object_enums import *
 if TYPE_CHECKING:
-    from . import data_types as dt
+    from .. import data_types as dt
 
 
 

@@ -7,7 +7,7 @@
             "import":"Actions",
             "from":".ui_test_program.func"
         },
-        "extentions":[
+        "extensions":[
             {
                 "import":["RouteBtn", "TestContainer"], 
                 "from":".controls.test_controls"

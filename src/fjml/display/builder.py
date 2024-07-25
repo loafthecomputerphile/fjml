@@ -6,8 +6,7 @@ from typing import (
     Any,
     Callable,
     Sequence,
-    Mapping,
-    TypeVar
+    Mapping
 )
 try:
     from typing import NoReturn
@@ -22,7 +21,6 @@ from .. import (
     error_types as err, 
     data_types as dt, 
     operation_classes as opc,
-    constants, 
     utils
 )
 
@@ -150,7 +148,7 @@ class Backend:
         for data in attribute_map.items():
             if self.has_attr(data[0]): self.set_attr(*data)
     
-    def group_assign(self, obj: Any, attribute_map: Mapping[str, Any]) -> NoReturn:
+    def group_assign(self, obj: Any, attribute_map: Mapping) -> NoReturn:
         key: str
         value: Any
         
@@ -158,7 +156,7 @@ class Backend:
             if hasattr(obj, key): setattr(obj, key, value)
     
     @property
-    def client_stroage(self) -> Mapping:
+    def client_storage(self) -> Mapping:
         return self.page.client_storage
     
     @property

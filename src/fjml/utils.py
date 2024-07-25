@@ -4,11 +4,16 @@ from typing import (
     Any,
     Optional,
     Sequence,
-    NoReturn,
     Mapping,
     TYPE_CHECKING,
     get_type_hints
 )
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
 from functools import lru_cache, partial
 import importlib, inspect, os, io, json, operator
 import errno, dill, base64, copy, lzma, types
@@ -22,7 +27,7 @@ from .error_types import RegistryFileNotFoundError
 from .object_enums import *
 if TYPE_CHECKING:
     from . import data_types as dt
-    from .parsers.renderer import Renderer
+    from .display.renderer import Renderer
 
 
 @lru_cache(16)
@@ -163,7 +168,7 @@ class Utilities:
         return results
     
     @staticmethod
-    def mfind(json_obj: dt.JsonDict, keys: Sequence[str], return_keys: bool = False) -> set[str]:
+    def m_find(json_obj: dt.JsonDict, keys: Sequence[str], return_keys: bool = False) -> set[str]:
         results: set[str] = set()
         k: str
         v: Any
@@ -175,10 +180,10 @@ class Utilities:
                     if k in keys:
                         results.add(k)
                     elif isinstance(v, Mapping) or is_sequence_not_str(v):
-                        results.update(Utilities.mfind(v, keys, return_keys))
+                        results.update(Utilities.m_find(v, keys, return_keys))
             elif is_sequence_not_str(json_obj):
                 for item in json_obj:
-                    results.update(Utilities.mfind(item, keys, return_keys))
+                    results.update(Utilities.m_find(item, keys, return_keys))
             
             return results
             
@@ -187,10 +192,10 @@ class Utilities:
                 if k in keys:
                     results.add(v)
                 elif isinstance(v, Mapping) or is_sequence_not_str(v):
-                    results.update(Utilities.mfind(v, keys, return_keys))
+                    results.update(Utilities.m_find(v, keys, return_keys))
         elif isinstance(json_obj, Sequence):
             for item in json_obj:
-                results.update(Utilities.mfind(item, keys, return_keys))
+                results.update(Utilities.m_find(item, keys, return_keys))
 
         return results
     
@@ -252,10 +257,13 @@ class Utilities:
 
     @staticmethod
     def update_del_dict(main_dict: Mapping, delete_key: str, update_dict: Mapping = {}) -> Mapping:
-        if delete_key in main_dict:
-            if update_dict:
-                main_dict.update(update_dict)
-            del main_dict[delete_key]
+        if delete_key not in main_dict:
+            return main_dict
+            
+        if update_dict:
+            main_dict.update(update_dict)
+        
+        del main_dict[delete_key]
         return main_dict
 
     @staticmethod

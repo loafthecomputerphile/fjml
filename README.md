@@ -1,7 +1,7 @@
 # FJML
 <img src="media/FJML_LOGO.png">
 
-### FJML is a Json based markup language which translates json files into Flet UI for web, mobile and desktop applications.
+### FJML is a JSON based markup language which translates JSON files into Flet UI for web, mobile and desktop applications.
 
 
 # Example:
@@ -94,38 +94,49 @@ class Paths:
 class App:
 
     def __init__(self, compile_run: bool = False) -> None:
-        if not compile_run:
-            compiler: Compiler = Compiler(
-                dt.ParamGenerator(
-                    program_path=Paths.PROGRAM
-                    compile_path=Paths.COMPILED
-                )
-            )
+        if compile_run:
+            compiler: Compiler = Compiler(Paths.PROGRAM, Paths.COMPILED)
             compiler.compile()
         
     async def run(self, page: ft.Page):
-        page = load_program(
-            Paths.COMPILED, Actions, page
-        )
+        page = load_program(Paths.COMPILED, Actions)
         page.go("/")
-         
+    
 
-
-    if __name__ == "__main__":
-        app: App = App(compile=True)
-        ft.app(target=app.run)
+if __name__ == "__main__":
+    app: App = App(compile_run=True)
+    ft.app(target=app.run)
 ```
 
 
 ## Python Integration
 
-Allows the use of python code to perform actions such as api calls, function calls, etc via the `EventContainer` Abstract Base Class 
+FJML allows the use of python code to perform actions such as API calls, function calls, etc. via the `EventContainer` Abstract Base Class.
 
-`EventContainer` includes multiple built-in helper classes and functions to help create programs
-- # EventContainer methods and classes
+- The main format of the Actions class which inherits from the `EventContainer` looks like this:
+    ```python
+    from fjml.data_types import EventContainer
+
+    class Actions(EventContainer):
+
+        def _page_setup(self):
+            '''
+            a custom page setup function to initialize your page object with data
+            '''
+        
+        def _imports(self):
+            '''
+            an import function used to run operations outside of the page before rendering the UI
+            '''
+        
+        #you can then add custom functions to be used throughout the FJML code
+    ```
 
 
-   - ### **client_stroage**:
+`EventContainer` also includes multiple built-in helper classes and functions to help create programs
+
+- ### `EventContainer` methods and classes
+   - ### **client_storage**:
         #### See [Flet Page Docs](https://flet.dev/docs/cookbook/client-storage)
 
    ---
@@ -148,7 +159,7 @@ Allows the use of python code to perform actions such as api calls, function cal
    - ### **dict_to_control**:
        | Name                | Attributes                | Return           | Description                                                           |
        | ------------------- | ------------------------- | ---------------- | --------------------------------------------------------------------- |
-       | **dict_to_control** | `control: dt.ControlDict` | `dt.ControlType` | Allows creating controls using fjml syntax inside the EventContainer. |
+       | **dict_to_control** | `control: dt.ControlDict` | `dt.ControlType` | Allows creating controls using FJML syntax inside the `EventContainer`. |
 
        - #### Example Usage:
 
@@ -206,14 +217,14 @@ Allows the use of python code to perform actions such as api calls, function cal
     ---
 
    - ### **eval_locals**:
-       #### This class's main use is to add or delete locals from the eval statement's locals parameter.
+       #### This class's main use is to add or delete locals from the evil statement's locals parameter.
        | Methods         | Attributes                | Return              | Description                                                       |
        | --------------- | ------------------------- | ------------------- | ----------------------------------------------------------------- |
-       | **add**         | `name: str`, `obj: Any`   | `None`              | adds an object to the eval statment's locals                      |
-       | **delete**      | `name: str`               | `None`              | deletes an object from the eval statment's locals                 |
-       | **mass_add**    | `data: Mapping[str, Any]` | `None`              | adds multiple objects to the eval statment's locals               |
-       | **mass_delete** | `data: Sequence[str]`     | `None`              | deletes multiple objects from the eval statment's locals          |
-       | **data**        | `None`                    | `Mapping[str, Any]` | returns a copy of all preset locals in the eval statment's locals |
+       | **add**         | `name: str`, `obj: Any`   | `None`              | adds an object to the eval statement's locals                      |
+       | **delete**      | `name: str`               | `None`              | deletes an object from the eval statement's locals                 |
+       | **mass_add**    | `data: Mapping[str, Any]` | `None`              | adds multiple objects to the eval statement's locals               |
+       | **mass_delete** | `data: Sequence[str]`     | `None`              | deletes multiple objects from the eval statement's locals          |
+       | **data**        | `None`                    | `Mapping[str, Any]` | returns a copy of all preset locals in the eval statement's locals |
 
    ---
 
@@ -221,11 +232,11 @@ Allows the use of python code to perform actions such as api calls, function cal
 
        | Methods           | Attributes                            | Return | Description                                                                                             |
        | ----------------- | ------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
-       | __set_object__    | `name: str`, `obj: AnyCallable`       | `None` | adds any callable object to the the bucket so it can be called inside the UI code                       |
-       | __call_object__   | `name: str`, `kwargs: dict[str, Any]` | `Any`  | calls the object with the necessary key word arguments. (used when object is called within the UI code) |
-       | __delete_object__ | `name: str`                           | `None` | deletes the object from the bucket                                                                      |
+       | **set_object**    | `name: str`, `obj: AnyCallable`       | `None` | adds any callable object to the bucket, so it can be called inside the UI code                       |
+       | **call_object**   | `name: str`, `kwargs: dict[str, Any]` | `Any`  | calls the object with the necessary key word arguments. (used when object is called within the UI code) |
+       | **delete_object** | `name: str`                           | `None` | deletes the object from the bucket                                                                      |
 
-       #### This class's main use is to register objects for use in fjml code via the "__call__" designator:
+       #### This class's main use is to register objects for use in FJML code via the "**call**" designator:
        * ⠀
            ```json
            {
@@ -236,28 +247,28 @@ Allows the use of python code to perform actions such as api calls, function cal
            }
            ```
        
-       #### if an object is not registered it can not be called but can only be referenced using a __code_refs__ or the __func__ designators.
+       #### If an object is not registered it can not be called but can only be referenced using a **code_refs** or the **func** designators.
 
    ---
 
    - ### **property_bucket**:
        | Methods      | Attributes                                    | Return | Description                                                                                                                                                        |
        | ------------ | --------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-       | __add__      | `name: str`, `obj: Any`                       | `None` | adds a property to be used as a `code_refs` inside the UI code                                                                                                     |
-       | __contains__ | `name: str`                                   | `bool` | used to check if a name is registeerd as property                                                                                                                  |
-       | __call__     | `name: str`, `operation: str`, `set_val: Any` | `None` | Uses the property operations (set, get, del) to either set an object using the set_val parameter, get by just giving the name or deletion using the del operation. |
+       | **add**      | `name: str`, `obj: Any`                       | `None` | adds a property to be used as a `code_refs` inside the UI code                                                                                                     |
+       | **contains** | `name: str`                                   | `bool` | used to check if a name is registered as property                                                                                                                  |
+       | **call**     | `name: str`, `operation: str`, `set_val: Any` | `None` | Uses the property operations (set, get, del) to either set an object using the set_val parameter, get by just giving the name or deletion using the del operation. |
 
        #### This class's main use is to register python functions as properties to be used as **code_refs**
 
    ---
 
    - ### **setup_functions**:
-       #### This class's main use is to register functions to be called to setup what ever api, environment, etc when the UI starts up.
+       #### This class's main use is to register functions to be called to set up what ever API, environment, etc. when the UI starts up.
        | Methods            | Attributes                                        | Return | Description                            |
        | ------------------ | ------------------------------------------------- | ------ | -------------------------------------- |
-       | __add_func__       | `func: Callable`, `parameters: Sequence[Any]`     | `None` | adds a function to the class           |
-       | __mass_add_func__  | `items: Sequence[tuple[Callable, Sequence[Any]]]` | `None` | adds multiple functions to the class   |
-       | __call_functions__ | `self`                                            | `None` | calls all functions added to the class |
+       | **add_func**       | `func: Callable`, `parameters: Sequence[Any]`     | `None` | adds a function to the class           |
+       | **mass_add_func**  | `items: Sequence[tuple[Callable, Sequence[Any]]]` | `None` | adds multiple functions to the class   |
+       | **call_functions** | `None`                                            | `None` | calls all functions added to the class |
 
    ---
 
@@ -265,35 +276,18 @@ Allows the use of python code to perform actions such as api calls, function cal
        #### this class is used primarily for retrieving styles set inside the style sheet. This is mainly used in the "**_unpack**" designator via the `{"styling":"xyz"}` mapping value.
        | Methods       | Attributes  | Return        | Description                               |
        | ------------- | ----------- | ------------- | ----------------------------------------- |
-       | __get_style__ | `path: str` | `dt.JsonDict` | gets the style from a style sheet by name |
+       | **get_style** | `path: str` | `dt.JsonDict` | gets the style from a style sheet by name |
 
    ---
 
    - ### **view_operations**:
-       This class is used to generate and register flet views. its main use is in the flet's `Page.on_route_change` event.
-       | Methods       | Attributes                                             | Return    | Description                                                 |
-       | ------------- | ------------------------------------------------------ | --------- | ----------------------------------------------------------- |
-       | __set_view__  | `route_name: str`, `view_settings: dt.ControlSettings` | `None`    | adds a `UIViews` to the compiled_model ui mapping attribute |
-       | __add_view__  | `view: ft.View`                                        | `None`    | adds a flet view control to the page views                  |
-       | __make_view__ | `view_model: UIViews`                                  | `ft.View` | generates a flet view control from a `UIViews` type         |
+        #### This class is used to generate and register Flet views. Its main use is in the Flet's `Page.on_route_change` event.
+        | Methods       | Attributes                                             | Return    | Description                                                 |
+        | ------------- | ------------------------------------------------------ | --------- | ----------------------------------------------------------- |
+        | **set_view**  | `route_name: str`, `view_settings: dt.ControlSettings` | `None`    | adds a `UIViews` to the compiled_model ui mapping attribute |
+        | **add_view**  | `view: ft.View`                                        | `None`    | adds a Flet view control to the page views                  |
+        | **make_view** | `view_model: UIViews`                                  | `ft.View` | generates a Flet view control from a `UIViews` type         |
 
-```python
-from fjml.data_types import EventContainer
-
-class Actions(EventContainer):
-
-    def _page_setup(self):
-        '''
-        a custom page setup function if needed before rendering the UI and adding it to the page
-        '''
-    
-    def _imports(self):
-        '''
-        an import function used to run operations outside of the page before rendering the UI and adding it to the page 
-        '''
-    
-    #you can then add custom functions to be used throughout the fjml code
-```
 
 ## UI Format
 
@@ -316,7 +310,7 @@ class Actions(EventContainer):
 }
 ```
 
-This format seperates the header data, imports, controls and display ui.
+This format separates the header data, imports, controls and display UI.
 
 - ## Header:
     Headers is primarily map based and thus requires one to use keys and values unlike the list based forms like the rest are. 
@@ -327,7 +321,7 @@ This format seperates the header data, imports, controls and display ui.
         | ---------- | --------- |
         | `str`      | `"extra"` |
 
-        stores the name of the folder which contains the fjml imports
+        stores the name of the folder which contains the FJML imports
     
     - #### **program_name**:
         | Value Type | Example         |
@@ -341,7 +335,7 @@ This format seperates the header data, imports, controls and display ui.
         | ---------- | --------------- |
         | `str`      | `"style_sheet"` |
     
-        stores the name of the fjml style sheet.
+        Stores the name of the FJML style sheet.
         
     - #### **action_import**:
         | Value Type    | Example                          |
@@ -351,8 +345,8 @@ This format seperates the header data, imports, controls and display ui.
         This dictionary imports the action class using the format:
         | Key        | Value Type | Example               |
         | ---------- | ---------- | --------------------- |
-        | __from__   | `str`      | `".import_path.func"` |
-        | __import__ | `str`      | `"Action"`            |
+        | **from**   | `str`      | `".import_path.func"` |
+        | **import** | `str`      | `"Action"`            |
 
         full example:
         ```json
@@ -372,7 +366,7 @@ This format seperates the header data, imports, controls and display ui.
 
         The import statement is run as if it was run in your main file.
 
-    - #### **extentions**:
+    - #### **extensions**:
         | Value Type              | Example                                                |
         | ----------------------- | ------------------------------------------------------ |
         | `Sequence[dt.JsonDict]` | `[{"from":"...", "import":"...", "using":"..."}, ...]` |
@@ -380,14 +374,14 @@ This format seperates the header data, imports, controls and display ui.
         The value of this key consists of using a sequence of dictionaries which help import multiple controls at once:
         | Key        | Value Type                  | Example                                       |
         | ---------- | --------------------------- | --------------------------------------------- |
-        | __from__   | `str`                       | `.custom_controls`                            |
-        | __import__ | `Union[str, Sequence[str]]` | `"CustomBtn"` or `["CustomBtn", "CustomTxt"]` |
-        | __using__  | `Optional[str]`             | `"CC"`                                        |
+        | **from**   | `str`                       | `.custom_controls`                            |
+        | **import** | `Union[str, Sequence[str]]` | `"CustomBtn"` or `["CustomBtn", "CustomTxt"]` |
+        | **using**  | `Optional[str]`             | `"CC"`                                        |
 
         full example:
         ```json
         {
-            "extentions":[
+            "extensions":[
                 {
                     "from":".custom_controls",
                     "import":["CustomBtn", "CustomTxt"],
@@ -397,7 +391,7 @@ This format seperates the header data, imports, controls and display ui.
         }
         ```
 
-        Using extention imports like this is equivalent to:
+        Using extension imports like this is equivalent to:
         - With the `using` key:
             - 
             ```python
@@ -413,7 +407,7 @@ This format seperates the header data, imports, controls and display ui.
             ```
 
 - #### Imports:
-    Imports are called using the file name of the ui file defined inside the import folder defined by the key `"source"`. if the import folder includes different folders the use of the key `"folder"` can be used to indicate the specific folder inside the main import folder where you want to import from. e.g:
+    Imports are called using the file name of the UI file defined inside the import folder defined by the key `"source"`. if the import folder includes different folders the use of the key `"folder"` can be used to indicate the specific folder inside the main import folder where you want to import from. e.g:
         - `{"source:"container_ui"}`
         - `{source:["user_ui", "admin_ui"], "folder":"person_ui_folder"}`
 
@@ -435,7 +429,7 @@ This format seperates the header data, imports, controls and display ui.
 
 ### Imported UI File:
 
-With imports the json structure is similiar except that it only has the `"Controls"` container.Using controls from other files is still possible once all dependencies are also imported into the main file. 
+With imports the JSON structure is similar except that it only has the `"Controls"` container. Using controls from other files is still possible once all dependencies are also imported into the main file. 
 
 Imported file format:
 
@@ -447,7 +441,7 @@ Imported file format:
 
 ### Style Sheet File:
 
-With style sheets you are able to create styles for use later in your program. You are able to section off your styles by names and sub-names and thus call them using the format `{name}.{sub_name}.{sub_sub_name}...`.This format can go on forever if needed but can increase rendering time of your program if you go too deep.
+With style sheets you are able to create styles for use later in your program. You are able to section off your styles by names and sub-names and thus call them using the format `{name}.{sub_name}.{sub_sub_name}...`. This format can go on forever if needed but can increase rendering time of your program if you go too deep.
 
 Style sheet Format:
 ```json
@@ -478,7 +472,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
     ```python
     class Action(EventContainer):
 
-        async def _imports(self) -> None:
+        def _imports(self) -> None:
             #register callable object
             self.object_bucket.set_object("calc_width", self.calc_width)
         
@@ -536,11 +530,11 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
         }
     }
     ```
-    this can be accessed inside the Actions class using self.name and if control is defined as self.name inside Actions  it can be called in fjml using {"refs":"name"}
+    this can be accessed inside the Actions class using `self.name` and if control is defined as `self.name` inside Actions it can be called in FJML using `{"refs":"name"}`
 
 - ### Using variables:
 
-    Allows the use of fjml variables to be referenced in the same file or else where without the need for constant importing
+    Allows the use of FJML variables to be referenced in the same file or else where without the need for constant importing
 
     #### control variables:
     
@@ -565,12 +559,12 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
 
     #### code variables:
 
-    Allows the variables defined in python code to be accessed and used inside fjml code
+    Allows the variables defined in python code to be accessed and used inside FJML code
 
     ```python
     class Actions(EventContainer):
 
-        async def _imports(self) -> None:
+        def _imports(self) -> None:
             self.text_size: int = 16
     ```
 
@@ -585,7 +579,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
     }
     ```
 
-    #### Attriute and index calling:
+    #### Attribute and index calli
 
     The `idx` key works for both dictionaries and index based sequences.
 
@@ -643,7 +637,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
         }
         ```
 - ### Action Class:
-    Inorder to link your action class to fjml code you must import the in the `Header` container using the key, `action_import`.
+    In order to link your action class to FJML code you must import the in the `Header` container using the key, `action_import`.
     - #### Example:
 
         ```json
@@ -660,20 +654,20 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
         }
         ```
 
-    All action imports must exist in an importable path and be writen as if it was ran in the `main.py` file.
+    All action imports must exist in an importable path and be written as if it was run in the `main.py` file.
 
 
 - ### Custom Controls:
-    Fjml allows you multiple ways to define and add custom controls to your project.
-    This is done by using the `"extentions"` key inside the `"Header"`:
+    FJML allows you multiple ways to define and add custom controls to your project.
+    This is done by using the `"extensions"` key inside the `"Header"`:
 
     ```json
     {
         "Header":{
-            "extentions":[
+            "extensions":[
                 {
                     "using":"fm",
-                    "import":["Buttons", "Switchs"],
+                    "import":["Buttons", "Switches"],
                     "from":"flet_material"
                 }
             ]
@@ -682,7 +676,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
         "Controls":[
             {
                 "var_name":"switch",
-                "control_type":"fm.Switchs",
+                "control_type":"fm.Switches",
                 "settings":{}
             }
         ],
@@ -696,40 +690,28 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
 
 - # **Running the app**
    
-   After this has been done you must add the list to the `ParamGenerator` class inside the `Compiler` class
-
     ```python title="main.py"
     from fjml import load_program, Compiler, data_types as dt
-    import enum
     import flet as ft
 
-    class Paths(enum.StrEnum):
+    class Paths:
         PROGRAM: str = "path\\to\\program"
-        COMPILED: str = "path\\to\\compiled_program\\compiled.fjml"
+        COMPILED:str = "path\\to\\compiled_program\\compiled.fjml"
 
     class App:
 
         def __init__(self, compile_run: bool = False) -> None:
-            if not compile:
+            if not compile_run:
                 return
                  
-            compiler: Compiler = Compiler(
-                dt.ParamGenerator(
-                    program_path=Paths.PROGRAM
-                    compile_path=Paths.COMPILED
-                )
-            )
+            compiler: Compiler = Compiler(Paths.PROGRAM, Paths.COMPILED)
             compiler.compile()
             
         async def run(self, page: ft.Page):
-            page = load_program(
-                Paths.COMPILED, page
-            )
+            page = load_program(Paths.COMPILED, page)
             page.go("/")
-         
-
 
     if __name__ == "__main__":
-        app: App = App(compile=True)
+        app: App = App(compile_run=True)
         ft.app(target=app.run)
     ```

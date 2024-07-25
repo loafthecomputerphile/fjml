@@ -48,8 +48,7 @@ class ControlRegistryOperations:
             try:
                 if name != control_types[i][ControlRegKeys.NAME]:
                     control_types = swap_positions(
-                        control_types,
-                        i,
+                        control_types, i,
                         controls.index(control_types[i][ControlRegKeys.NAME]),
                     )
             except IndexError as e:
@@ -177,6 +176,8 @@ class ControlRegistryOperations:
         )
 
         if edit_registry:
-            return utils.RegistryFileOperations.save_file(controls_registry)
+            return utils.RegistryFileOperations.save_file(
+                controls_registry
+            )
 
         return controls_registry

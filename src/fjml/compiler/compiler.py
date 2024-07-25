@@ -1,4 +1,4 @@
-import io, os, json, time
+import io, os, json, time, operator, functools
 from typing import(
     Any, Union, 
     Final, Callable, 
@@ -6,7 +6,6 @@ from typing import(
     Generator, Type, 
     TypeAlias
 )
-from functools import wraps
 
 try:
     from typing import NoReturn
@@ -15,23 +14,23 @@ except:
 
 import flet as ft
 
-from .builder import Backend
+from ..display.builder import Backend
 from ..object_enums import *
-from .control_register import ControlRegistryOperations
+from ..registry.control_register import ControlRegistryOperations
 from ..utils import Utilities, import_module
+from . import checks
 from .. import (
     data_types as dt,
     error_types as errors, 
     operation_classes as opc,
     constant_controls,
     constants,
-    utils,
-    checks
+    utils
 )
 
 
 def timeit(func: Callable) -> Callable:
-    @wraps(func)
+    @functools.wraps(func)
     def timeit_wrapper(*args, **kwargs) -> Any:
         start_time: float = time.perf_counter()
         result: Any = func(*args, **kwargs)
@@ -49,24 +48,20 @@ VALID_KEYS: Final[Sequence[str]] = [
     MarkupKeys.UI, MarkupKeys.IMPORTS, 
     MarkupKeys.CONTROLS, MarkupKeys.HEADER
 ]
+valid_imports: tuple[dt.ThirdPartyExtension, dt.UIImports] = (dt.ThirdPartyExtension, dt.UIImports)
 
 class Compiler:
 
     __slots__ = (
         "control_settings",
-        "control_registry_path",
         "code",
         "controls",
         "parsed_controls",
         "parsed_ui",
-        "control_awaitable",
-        "program_name",
         "program",
         "used_controls",
         "routes",
         "custom_controls",
-        "control_bundles",
-        "methods",
         "imports_path",
         "controls_registry",
         "are_registries_joined",
@@ -76,50 +71,48 @@ class Compiler:
         "control_param_types"
     )
 
-    def __init__(self, params: dt.ParamGenerator) -> NoReturn:
-        self.params: dt.ParamGenerator = params
-        params.parse_extentions()
-        self.used_controls: set[str] = set()
+    def __init__(self, program_path: str, compile_path: str) -> NoReturn:
+        self.params: dt.ParamGenerator = dt.ParamGenerator(program_path, compile_path)
+        self.params.parse_extensions()
+        self.imports_path: str = self.params.imports_path
+        self.code: dt.JsonDict = self.params.ui_code
         self.style_sheet: opc.StyleSheet
+        self.used_controls: set[str] = set(["View"])
         self.custom_controls: dt.ControlRegistryJsonScheme
         self.dependent_refs: opc.ControlDependencies = opc.ControlDependencies()
         self.are_registries_joined: bool = False
-        self.imports_path: str = self.params.imports_path
-        self.program_name: str = self.params.program_name
         self.controls_registry: dt.ControlRegistryJsonScheme = (
             dt.ControlRegistryJsonScheme()
         )
-        self.code: dt.JsonDict = self.params.ui_code
         self.routes: set[str] = set()
-        self.methods: Type[dt.EventContainer]
         self.controls: dt.ControlMap = dt.ControlMap()
         self.control_param_types: Mapping[str, dt.TypeHints] = {}
-        self.control_awaitable: Mapping[str, bool] = {}
         self.control_settings: Mapping[str, Sequence[str]] = {}
         self.parsed_controls: dt.ParsedControls = {}
         self.parsed_ui: dt.ParsedUserInterface = {}
         self.setup()
     
-    
     def setup(self) -> NoReturn:
-        self.style_sheet = opc.StyleSheet(self.params.style_sheet)
+        self.style_sheet: opc.StyleSheet = opc.StyleSheet(self.params.style_sheet)
         custom_controls: Sequence[dt.ControlRegisterInterface] = self.add_constant_controls(
             self.parse_custom_controls(self.params.custom_controls)
         )
+        
         if custom_controls:
             self.custom_controls = ControlRegistryOperations.generate_dict(
                 [dt.ControlRegistryModel(**control) for control in custom_controls]
             )
     
-    def parse_custom_controls(self, data: Sequence[Union[dt.ThirdPartyExtention, dt.UIImports]]) -> Sequence[dt.ControlRegisterInterface]:
-        value: Union[dt.ThirdPartyExtention, dt.UIImports]
-        result: Sequence[dt.ControlRegisterInterface] = []
+    def parse_custom_controls(self, data: Sequence[dt.ExtensionType]) -> Sequence[dt.ControlRegisterInterface]:
+        value: dt.ExtensionType
+        func: Callable[[Any], bool] = lambda x: isinstance(
+            x, valid_imports
+        )
         
-        for value in data:
-            if isinstance(value, (dt.ThirdPartyExtention, dt.UIImports)):
-                result.extend(value.extensions())
-            
-        return result
+        return functools.reduce(
+            operator.concat, 
+            [value.extensions() for value in filter(func, data)]
+        )
 
     def validate_imports(self, file_name: str, data: dt.JsonDict) -> NoReturn:
         keys: Sequence[str]
@@ -182,8 +175,8 @@ class Compiler:
             control = control_scheme[ControlRegKeys.CONTROL_TYPES][
                 control_scheme[ControlRegKeys.CONTROLS].index(name)
             ]
-            
             control_keys.add(name)
+                
             self.controls[name] = getattr(
                 import_module(control[ControlRegKeys.SOURCE], None), 
                 control[ControlRegKeys.ATTR]
@@ -212,7 +205,7 @@ class Compiler:
         self.update_used_controls(self.style_sheet.data)
         self.update_used_controls(self.code)
 
-    def compile(self) -> dt.CompiledModel:
+    def compile(self) -> NoReturn:
         self.__load_program()
         self.parsed_controls.update(
             self.__parse_controls(self.code[MarkupKeys.CONTROLS])
@@ -222,20 +215,20 @@ class Compiler:
         
         self.dependent_refs.update_cache()
         
-        model: dt.CompiledModel = dt.CompiledModel(
-            self.parsed_controls, self.style_sheet,
-            self.parsed_ui, self.controls,
-            self.routes, self.control_settings, self.dependent_refs,
-            self.control_param_types, self.params.action_code, 
-            self.params.program_name
+        self.params.save_program(
+            dt.CompiledModel(
+                self.parsed_controls, self.style_sheet,
+                self.parsed_ui, self.controls,
+                self.routes, self.control_settings, self.dependent_refs,
+                self.control_param_types, self.params.action_code, 
+                self.params.program_name
+            )
         )
-        
-        self.params.save_program(model)
     
     def load_file(self, source: str) -> Sequence[dt.NamedControlDict]:
         program: io.TextIOWrapper
         file: Sequence[dt.NamedControlDict]
-        path: str = f"{self.imports_path}\\{source}"
+        path: str = os.path.join(self.imports_path, source)
         
         if not os.path.exists(path):
             return []
@@ -249,11 +242,13 @@ class Compiler:
         return []
 
     def __parse_imports(self) -> NoReturn:
-        import_data: Sequence[dt.ImportDict] = self.code.get(MarkupKeys.IMPORTS, None)
+        import_data: Sequence[dt.ImportDict] = self.code.get(
+            MarkupKeys.IMPORTS, None
+        )
         data: dt.JsonDict
         source: str
         paths: Sequence[str] = []
-        jsondata: Sequence[Sequence[dt.NamedControlDict]] = []
+        json_data: Sequence[Sequence[dt.NamedControlDict]] = []
 
         if not import_data:
             return self.__load_controls()
@@ -266,7 +261,7 @@ class Compiler:
                 if ImportKeys.FROM not in data:
                     continue
                 for i in source:
-                    paths.append(f"{data[ImportKeys.FROM]}\\{i}.json")
+                    paths.append(os.path.join(data[ImportKeys.FROM], f"{i}.json"))
             else:
                 paths.append(f"{source}.json")
                 
@@ -274,13 +269,13 @@ class Compiler:
             data = self.load_file(path)
             if not data:
                 continue
-            jsondata.append(data)
+            json_data.append(data)
 
         self.__load_controls()
-        if not jsondata:
+        if not json_data:
             return
 
-        for data in jsondata:
+        for data in json_data:
             self.parsed_controls.update(self.__parse_controls(data))
 
     def update_used_controls(self, data: MarkupType) -> NoReturn:
@@ -302,21 +297,19 @@ class Compiler:
                 data[ControlKeys.VAR_NAME], 
                 data.get(ControlKeys.SETTINGS, {})
             )
-            parsed_data[data[ControlKeys.VAR_NAME]] = self.make_control_model(
-                data
-            )
+            parsed_data[data[ControlKeys.VAR_NAME]] = self.make_control_model(data)
 
         return parsed_data
     
     def make_control_model(self, data: dt.NamedControlDict) -> dt.ControlModel:
         control_name: str = data[ControlKeys.CONTROL_TYPE]
-        return dt.ControlModel(
+        return functools.partial(dt.ControlModel(
             control_name=control_name,
             name=data[ControlKeys.VAR_NAME],
             control=self.controls[control_name],
             settings=data.get(ControlKeys.SETTINGS, {}),
             valid_settings=self.control_settings[control_name]
-        )
+        ).build)
 
     def __parse_ui(self, ui_data: Sequence[dt.RouteDict]) -> NoReturn:
         route_dict: dt.RouteDict
@@ -328,18 +321,21 @@ class Compiler:
                 route_dict[ControlKeys.ROUTE], 
                 route_dict[ControlKeys.SETTINGS]
             )
-            self.parsed_ui[route_dict[ControlKeys.ROUTE]] = dt.UIViews(**route_dict)
+            self.parsed_ui[route_dict[ControlKeys.ROUTE]] = opc.UIViews(**route_dict)
 
         self.__load_controls()
     
     def parse_iterator(self, data: Sequence[Mapping], checker: type[checks.Checker]) -> Generator[Mapping, None, None]:
         value: Mapping
         res: Union[Mapping, None]
+        is_route: bool = checker == checks.RouteCheck
         
         for value in data:
             res = checker.correct(value, self)
             if not res: continue
             del res[MarkupKeys.SKIP]
+            if is_route:
+                res[ControlRegKeys.VALID_SETTINGS] = self.control_settings["View"]
             yield res
 
 

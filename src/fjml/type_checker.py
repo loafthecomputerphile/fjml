@@ -2,7 +2,8 @@ from typing import Union, Any, Mapping, Dict, Sequence, List, get_origin, get_ar
 from enum import Enum
 from .utils import is_sequence_not_str
 
-def _origin(data: Any):
+
+def _origin(data: Any) -> type:
     if isinstance(data, type):
         return data
     try:
@@ -10,6 +11,7 @@ def _origin(data: Any):
         return origin_res if origin_res else type(None)
     except:
         return type(None)
+
 
 def _new_isinstance(duck_type: type,  type_to_check: type) -> bool:
     org = _origin(duck_type)
@@ -20,10 +22,10 @@ def _new_isinstance(duck_type: type,  type_to_check: type) -> bool:
     )
 
 
-_Sequences: tuple[type] = (list, List, Tuple, Set, tuple, set, Sequence)
+_Sequences: tuple[type, ...] = (list, List, Tuple, Set, tuple, set, Sequence)
 
 
-def type_check(value, dtype, depth: int=0) -> bool:
+def type_check(value: Any, dtype: type, depth: int=0) -> bool:
     
     if dtype == Any:
         return True
