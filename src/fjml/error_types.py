@@ -1,4 +1,9 @@
-from typing import Literal, NoReturn, Any
+from typing import Literal, Any
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
 
 
 class ConditionalError:
@@ -24,7 +29,7 @@ class InvalidTypeError(Exception):
 
     def __init__(self, var_name: str, value: Any, dtype: Any, var: str = "Variable") -> NoReturn:
         super().__init__(
-            f"{var} {var_name}, expected type of {dtype}, isntead recieved type of {type(value)}, "
+            f"{var} {var_name}, expected type of {dtype}, instead received type of {type(value)}, "
         )
 
 

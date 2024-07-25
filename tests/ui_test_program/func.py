@@ -1,6 +1,12 @@
 import flet as ft
-from typing import NoReturn, Awaitable, Coroutine
-from fjml import data_types as dt
+from typing import Awaitable, Coroutine
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
+from src.fjml import data_types as dt
 from ..controls import ThemeSettings
 
 

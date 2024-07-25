@@ -1,5 +1,11 @@
 import flet as ft
-from typing import Union, NoReturn
+from typing import Union
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
 
 class TestContainer(ft.Container):
 

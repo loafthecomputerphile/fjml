@@ -1,6 +1,11 @@
 import flet.canvas as cv
 from flet import Control, ControlEvent
-from typing import NoReturn, Optional, Callable
+from typing import Optional, Callable
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
 
 
 __all__ = ["SizeAwareControl"]

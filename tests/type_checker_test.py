@@ -1,5 +1,11 @@
 from src.fjml import type_checker as tc
-from typing import Union, Sequence, Optional, NoReturn, Dict, List
+from typing import Union, Sequence, Optional, Dict, List
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
+
 import pytest
 
 

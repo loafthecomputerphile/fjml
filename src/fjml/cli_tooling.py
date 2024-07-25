@@ -12,13 +12,11 @@ except:
     from typing_extensions import NoReturn
 
 import flet as ft
-from flet.matplotlib_chart import MatplotlibChart
-from flet.plotly_chart import PlotlyChart
 
-from .parsers.control_register import ControlRegistryOperations
+from .registry.control_register import ControlRegistryOperations
 from . import data_types as dt, utils
 from .constants import (
-    USER_INTEFACE_FILE_TEXT,
+    USER_INTERFACE_FILE_TEXT,
     IMPORT_FILE_TEXT,
     FUNCTION_FILE_TEXT,
     OPERATION_ARGS,
@@ -55,7 +53,7 @@ class Update:
     
     def __init__(self) -> NoReturn:
         self.populous: Sequence[dt.ControlRegisterInterface] = list(itertools.starmap(
-            self.make_inteface,
+            self.make_interface,
             (
                 (ft.matplotlib_chart.MatplotlibChart, "MatplotlibChart"),
                 (ft.plotly_chart.PlotlyChart, "PlotlyChart"),
@@ -78,15 +76,14 @@ class Update:
         return self.splitter(obj2.__module__) == self.splitter(obj1.__name__)
     
     def first_populate(self) -> NoReturn:
-        module_map: Mapping[str, Any] = {"flet":ft, "ft.canvas":ft.canvas}
         flet_attr: Any
         module_attr: Any
         attr_name: str
         module_name: str
         maker: Callable
     
-        for module_name, module_attr in module_map.items():
-            maker = partial(self.make_inteface, module=module_name)
+        for module_name, module_attr in {"flet":ft, "ft.canvas":ft.canvas}.items():
+            maker = partial(self.make_interface, module=module_name)
             for attr_name, flet_attr in inspect.getmembers(module_attr):
                 if not inspect.isclass(flet_attr) or attr_name in self.added_names:
                     continue
@@ -142,7 +139,7 @@ class Update:
                     
                 self.added_names.append(f"{attr_name}.{module_attr_name}")
         
-    def make_inteface(self, obj: Any, name: str, module: str = "") -> dt.ControlRegisterInterface:
+    def make_interface(self, obj: Any, name: str, module: str = "") -> dt.ControlRegisterInterface:
         return dt.ControlRegisterInterface(
             name=name, 
             source=dt.ObjectSource(obj, module), 
@@ -182,15 +179,16 @@ class ProjectMaker:
             return print("Directory already exists")
 
         # Make JSON file
-        USER_INTEFACE_FILE_TEXT["Header"]["action_import"]["from"] = f".{name}.func"
-        self.make_json_file(project_path, "ui.json", USER_INTEFACE_FILE_TEXT)
-        self.make_json_file(project_path, "style_sheet.style.json", USER_INTEFACE_FILE_TEXT)
+        USER_INTERFACE_FILE_TEXT["Header"]["action_import"]["from"] = f".{name}.func"
+        self.make_json_file(project_path, "ui.json", USER_INTERFACE_FILE_TEXT)
+        self.make_json_file(project_path, "style_sheet.style.json", USER_INTERFACE_FILE_TEXT)
         self.make_python_file(project_path, "func.py", FUNCTION_FILE_TEXT)
 
         # Make subfolder
         subfolder_path: str = os.path.join(project_path, "extra")
         self.make_folder(subfolder_path)
         self.make_json_file(subfolder_path, "import1.json", IMPORT_FILE_TEXT)
+
 
 def registry_action(action: str) -> NoReturn:
     if action == "update":

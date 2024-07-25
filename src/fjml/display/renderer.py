@@ -2,20 +2,21 @@ from __future__ import annotations
 from functools import partial
 from copy import deepcopy
 import operator, itertools
-import enum
 from typing import (
     Any,
     Union,
     Callable,
-    NoReturn,
     Sequence,
     Mapping,
-    Generator,
     TypeAlias,
     TYPE_CHECKING,
-    TypeVar,
     Iterator
 )
+
+try:
+    from typing import NoReturn
+except:
+    from typing_extensions import NoReturn
 
 import flet as ft
 
@@ -34,11 +35,13 @@ NullOrStr: tuple[type, type] = (str, type(None))
 ParsedLoopItem: TypeAlias = Union[ft.Control, dt.ControlDict]
 is_null_string: Callable[[Any], bool] = lambda obj: isinstance(obj, NullOrStr)
 loop_refs_check: Callable[[Mapping], str] = partial(
-    Tools.multi_dict_get, items=[RefsKeys.REFS, RefsKeys.CODE_REFS]
+    Tools.multi_dict_get, items=(
+        RefsKeys.REFS, RefsKeys.CODE_REFS
+    )
 )
 
 
-class RefrenceBooleanParams:
+class ReferenceBooleanParams:
     STYLING: tuple[str, ...] = (RefsKeys.REFS, RefsKeys.CODE_REFS, RefsKeys.STYLING)
     NO_STYLING: tuple[str, ...] = (RefsKeys.REFS, RefsKeys.CODE_REFS)
 
@@ -48,7 +51,7 @@ class Renderer:
     __slots__ = (
         "backend", "update", "get_attr",
         "set_attr", "has_attr", "change_route",
-        "control_loader", "tools", "page", "references", "eparser",
+        "control_loader", "tools", "page", "references", "event_parsers",
         "use_bucket", "type_check", "get_ref",
         "control_names", "depth_count", "__loop_depth",
         "__loop_values", "unpack_function",
@@ -70,7 +73,7 @@ class Renderer:
         self.control_loader: opc.ControlLoader = opc.ControlLoader(self.backend)
         self.tools: utils.Utilities = self.backend.tools
         self.get_ref: Callable[[Mapping], Any] = opc.Reference(self).get_ref
-        self.eparser: opc.EventParser = opc.EventParser(self)
+        self.event_parsers: opc.EventParser = opc.EventParser(self)
         self.use_bucket: Sequence[str] = []
         self.control_names: Sequence[str] = []
         self.unpack_function = opc.Unpacker(self).unpack
@@ -89,7 +92,7 @@ class Renderer:
         return self.backend.style_sheet
     
     @property
-    def _ui(self) -> Mapping[str, dt.UIViews]:
+    def _ui(self) -> Mapping[str, opc.UIViews]:
         return self.backend.compiled_program.ui
     
     @property
@@ -117,9 +120,9 @@ class Renderer:
         data.extend(self.backend.preserve_control_bucket.data)
         return data
 
-    def clear_unecessary(self, valid_vars: Sequence[str] = []) -> NoReturn:
-        func = partial(operator.contains, valid_vars)
-        for x in itertools.filterfalse(func, self._controls):
+    def clear_unnecessary(self, valid_vars: Sequence[str] = []) -> NoReturn:
+        x: str
+        for x in itertools.filterfalse(partial(operator.contains, valid_vars), self._controls):
             self.set_attr(x)
 
     def init_controls(self) -> NoReturn:
@@ -131,29 +134,23 @@ class Renderer:
     
     def control_gen(self, names: Sequence[str]) -> Iterator[tuple[str, dt.ControlModel]]:
         x: str
-        func = partial(operator.contains, self._controls)
-        return [(x, self._controls[x]) for x in filter(func, names)]
+        return [
+            (x, self._controls[x]) 
+            for x in filter(partial(operator.contains, self._controls), names)
+        ]
     
     def get_hints(self, name: str) -> dt.TypeHints:
         return self.type_hints.get(name, {})
 
     def create_controls(self) -> NoReturn:
-        model: dt.ControlModel
+        control: Callable[[dt.ControlModel, Callable], dt.ControlType]
         var_name: str
         data: Sequence[str] = self.get_dependent_controls()
-        self.clear_unecessary(data)
+        self.clear_unnecessary(data)
         
-        for var_name, model in self.control_gen(data):
-            self.set_attr(
-                var_name, 
-                model.control(
-                    **self.settings_object_parsers(
-                        model.settings, 
-                        model.valid_settings,
-                        self.get_hints(model.control_name)
-                    )
-                )
-            )
+        for var_name, control in self.control_gen(data):
+            self.set_attr(var_name, control(self.settings_object_parsers))
+        
 
     def ui_parser(self, control: dt.ControlDict) -> dt.ControlType:
         self.register_controls(control)
@@ -206,51 +203,50 @@ class Renderer:
             
             if loop_refs_check(control):
                 reference = self.tools.parse_reference(self, control)
-                if not reference: continue
+                if not reference: 
+                    continue
                 control_list.append(reference)
                 continue
             
             content = control.get(ControlKeys.CONTROL_TYPE, None)
             call_name = control.get(EventKeys.CALL, None)
-            if not (is_null_string(content) and is_null_string(call_name)):
+            if not content and not call_name:
                 return []
             
             if content == ControlKeys.LOOP:
-                return_val.append(self.run_ui_loop(control))
-                continue
+                return []
             
             control_list.append(
                 self.generate_list_control(
-                    call_name,
-                    control
+                    call_name, content, control
                 )
             )
 
         return control_list
 
-    def generate_list_control(self, call_name: str, control: dt.JsonDict) -> ParsedLoopItem:
-        
-        if not call_name:
+    def generate_list_control(self, call_name: str, content: str, control: dt.JsonDict) -> ParsedLoopItem:
+        if content:
             control[ControlKeys.SETTINGS] = self.tools.search_and_sanitize(
                 control.get(ControlKeys.SETTINGS, {}), 
-                self.depth_count, self.__loop_values
+                self.depth_count,  self.__loop_values
             )
-            return control
+            return self.create_control(control)
         
         return self.object_bucket.call_object(
-            call_name,
+            call_name, 
             self.settings_object_parsers(
                 self.tools.search_and_sanitize(
                     control.get(ControlKeys.SETTINGS, {}), 
-                    self.depth_count,
-                    self.__loop_values
-                ),
+                    self.depth_count,  self.__loop_values
+                ), 
                 ignore=True
             )
         )
 
     def create_control(self, code: dt.ControlDict) -> dt.ControlType:
-        control: dt.ControlType = self.get_control(code)
+        control: dt.ControlType = self._control_map[
+            code[ControlKeys.CONTROL_TYPE]
+        ]
         
         return (
             control 
@@ -259,7 +255,7 @@ class Renderer:
                 **self.settings_object_parsers(
                     code.get(ControlKeys.SETTINGS, {}), 
                     self.control_settings[code[ControlKeys.CONTROL_TYPE]],
-                    self.type_hints.get(code[ControlKeys.CONTROL_TYPE], {})
+                    code[ControlKeys.CONTROL_TYPE]
                 )
             )
         )
@@ -267,16 +263,18 @@ class Renderer:
     
     def settings_object_parsers(
         self, settings: dt.ControlSettings, valid_settings: Sequence[str] = [], 
-        types: dt.TypeHints = {}, ignore: bool = False
+        types: str = "", ignore: bool = False
     ) -> dt.ControlSettings:
         data: Any
         i: int
         key: str
         
-        if not settings:
-            return {}
         
         if not ignore:
+            
+            if not settings:
+                return {}
+            
             valid_settings.append(ControlKeys.UNPACK)
             settings = self.tools.valid_param_filter(
                 settings, valid_settings
@@ -292,21 +290,21 @@ class Renderer:
         )
         
         for key in self.tools.get_keys_with_dict(settings):
-            if self.tools.mass_any_contains(RefrenceBooleanParams.STYLING, settings[key]):
+            if self.tools.mass_any_contains(ReferenceBooleanParams.STYLING, settings[key]):
                 self.call_references(settings, key, settings[key], True)
             elif ControlKeys.CONTROL_TYPE in settings[key]:
                 self.settings_to_controls(settings, key, settings[key], True)
         
         for key in self.tools.get_keys_with_list(settings):
-            for i, data in enumerate(settings[key]):
-                if not isinstance(data, Mapping): 
-                    continue
-                if self.tools.mass_any_contains(RefrenceBooleanParams.NO_STYLING, data):
+            for i, data in filter(lambda x: isinstance(x[1], Mapping), enumerate(settings[key])):
+                if self.tools.mass_any_contains(ReferenceBooleanParams.NO_STYLING, data):
                     self.call_references(settings[key], i, data)
                 elif ControlKeys.CONTROL_TYPE in data:
                     self.settings_to_controls(settings[key], i, data)
         
-        return self.type_check(settings, types)
+        return self.type_check(
+            settings, ({} if not types else self.get_hints(types))
+        )
 
     def call_references(
         self,
@@ -345,13 +343,13 @@ class Renderer:
             self.depth_count, self.__loop_values = 0, []
             return
 
+        #print(data)
         new_data: Any = self.try_get_attribute(data)
-        if new_data != constants.NULL:
+        if new_data:
             container[key] = new_data
             return
 
         container[key] = self.create_control(data)
-        
 
     def events(self, settings: dt.ControlSettings) -> dt.ControlSettings:
         key: str
@@ -360,32 +358,29 @@ class Renderer:
         
         for key in self.tools.get_keys_with_dict(settings):
             if EventKeys.ROUTE in settings[key]:
-                self.eparser.route(key, settings[key], settings)
+                self.event_parsers.route(key, settings[key], settings)
             elif EventKeys.FUNC in settings[key]:
-                self.eparser.func(key, settings[key], settings)
+                self.event_parsers.func(key, settings[key], settings)
             elif EventKeys.CALL in settings[key]:
-                self.eparser.call(key, settings[key], settings)
+                self.event_parsers.call(key, settings[key], settings)
             elif EventKeys.EVAL in settings[key]:
-                self.eparser.eval(key, settings[key], settings)
+                self.event_parsers.eval(key, settings[key], settings)
         
         for key in self.tools.get_keys_with_list(settings):
-            for i, data in enumerate(settings[key]):
-                if not isinstance(data, Mapping): continue
-                
+            for i, data in filter(lambda x: isinstance(x[1], Mapping), enumerate(settings[key])):
                 if EventKeys.CALL in data:
-                    self.eparser.call(i, data, settings[key])
+                    self.event_parsers.call(i, data, settings[key])
                 elif EventKeys.EVAL in data:
-                    self.eparser.eval(i, data, settings[key])
+                    self.event_parsers.eval(i, data, settings[key])
 
         return settings
     
-    def get_control(self, data: dt.ControlDict) -> dt.ControlType:
-        return self._control_map[data[ControlKeys.CONTROL_TYPE]]
-
     def try_get_attribute(self, data: dt.JsonDict) -> Any:
         return getattr(
-            self.get_control(data), 
+            self._control_map[
+                data[ControlKeys.CONTROL_TYPE]
+            ], 
             data[ControlKeys.ATTR], 
             None
-        ) if ControlKeys.ATTR in data else constants.NULL
+        ) if ControlKeys.ATTR in data else None
 
