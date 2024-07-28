@@ -300,16 +300,63 @@ class Compiler:
             parsed_data[data[ControlKeys.VAR_NAME]] = self.make_control_model(data)
 
         return parsed_data
+
+    def parse_nest(self, data: dt.ControlSettings) -> dt.ControlSettings:
+        key: str
+        item: Mapping
+        i: int
+        
+        if not data:
+            return {}
+        
+        for key in Tools.get_keys_with_dict(data):
+            if ControlKeys.CONTROL_TYPE not in data[key]:
+                continue
+            
+            if data[key][ControlKeys.CONTROL_TYPE] in constants.MARKUP_SPECIFIC_CONTROLS:
+                continue
+            
+            data[key] = self.make_nested_control(data[key])
+        
+        for key in Tools.get_keys_with_list(data):
+            for i, item in filter(lambda x: isinstance(x[1], Mapping), enumerate(data[key])):
+                if ControlKeys.CONTROL_TYPE not in item:
+                    continue
+                
+                if item[ControlKeys.CONTROL_TYPE] in constants.MARKUP_SPECIFIC_CONTROLS:
+                    continue
+                
+                data[key][i] = self.make_nested_control(item)
     
+        return data
+
+    def make_nested_control(self, data: Mapping) -> dt.NestedControlModel:
+        control_name: str = data[ControlKeys.CONTROL_TYPE]
+        return dt.NestedControlModel(
+            control_name=control_name,
+            control=self.controls[control_name],
+            settings=self.parse_nest(
+                self.param_filter(control_name, data)
+            )
+        )
+
     def make_control_model(self, data: dt.NamedControlDict) -> dt.ControlModel:
         control_name: str = data[ControlKeys.CONTROL_TYPE]
-        return functools.partial(dt.ControlModel(
+        return dt.ControlModel(
             control_name=control_name,
             name=data[ControlKeys.VAR_NAME],
             control=self.controls[control_name],
-            settings=data.get(ControlKeys.SETTINGS, {}),
-            valid_settings=self.control_settings[control_name]
-        ).build)
+            settings=self.parse_nest(
+                self.param_filter(control_name, data)
+            )
+        )
+    
+    def param_filter(self, name: str, data: dt.ControlDict) -> dt.ControlSettings:
+        return Tools.valid_param_filter(
+            data.get(ControlKeys.SETTINGS, {}), 
+            self.control_settings[name], 
+            ControlKeys.UNPACK
+        )
 
     def __parse_ui(self, ui_data: Sequence[dt.RouteDict]) -> NoReturn:
         route_dict: dt.RouteDict
@@ -321,7 +368,13 @@ class Compiler:
                 route_dict[ControlKeys.ROUTE], 
                 route_dict[ControlKeys.SETTINGS]
             )
-            self.parsed_ui[route_dict[ControlKeys.ROUTE]] = opc.UIViews(**route_dict)
+            
+            self.parsed_ui[route_dict[ControlKeys.ROUTE]] = opc.UIViews(
+                route_dict[ControlKeys.ROUTE], 
+                self.parse_nest(
+                    self.param_filter("View", route_dict)
+                )
+            )
 
         self.__load_controls()
     
@@ -334,8 +387,6 @@ class Compiler:
             res = checker.correct(value, self)
             if not res: continue
             del res[MarkupKeys.SKIP]
-            if is_route:
-                res[ControlRegKeys.VALID_SETTINGS] = self.control_settings["View"]
             yield res
 
 

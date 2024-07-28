@@ -134,11 +134,19 @@ class Utilities:
         )
 
     @staticmethod
-    def valid_param_filter(settings: dt.ControlSettings, valid_settings: Sequence[str]) -> dt.ControlSettings:
+    def valid_param_filter(settings: dt.ControlSettings, valid_settings: list[str], extra: Union[str, Sequence[str]]) -> dt.ControlSettings:
         x: tuple[str, Any]
-        return {} if not valid_settings else dict(
-            filter(lambda x: x[0] in valid_settings, settings.items())
-        )
+        
+        if not valid_settings:
+            return {}
+        
+        if extra:
+            if isinstance(extra, str):
+                valid_settings.append(extra)
+            elif isinstance(extra, Sequence):
+                valid_settings.extend(extra)
+
+        return {k:v for k,v in settings.items() if k in valid_settings}
 
     @staticmethod
     def get_keys_with_dict(settings: dt.JsonDict) -> Sequence[str]:

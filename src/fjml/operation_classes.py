@@ -141,17 +141,14 @@ class EvalLocalData:
 class UIViews:
     __slots__ = ("route", "settings")
     
-    def __init__(self, route: str, settings: dt.ControlSettings = {}, valid_settings: Sequence[str] = []) -> NoReturn:
+    def __init__(self, route: str, settings: dt.ControlSettings = {}) -> NoReturn:
         self.route: str = route
-        valid_settings.append(ControlKeys.UNPACK)
-        self.settings: dt.ControlSettings = Tools.valid_param_filter(
-            settings, valid_settings
-        )
+        self.settings: dt.ControlSettings = settings
         self.settings[ControlKeys.ROUTE] = self.route
     
-    def build(self, parser: Callable[[...], dt.ControlSettings]) -> ft.View:
+    def build(self, renderer: Renderer) -> ft.View:
         return ft.View(
-            **parser(
+            **renderer.settings_object_parsers(
                 self.settings,
                 types="View",
                 ignore=True
@@ -353,7 +350,12 @@ class ViewOperations:
             raise err.InvalidTypeError("view_settings", view_settings, Mapping)
         
         self.__backend.compiled_program._ui[route_name] = UIViews(
-            route_name, view_settings, self.valid_args
+            route_name, 
+            Tools.valid_param_filter(
+                view_setting,
+                self.valid_args,
+                ControlKeys.UNPACK
+            )
         )
 
     def add_view(self, view: ft.View) -> NoReturn:
@@ -362,16 +364,14 @@ class ViewOperations:
     def make_view(self, view_model: UIViews) -> ft.View:
         
         if view_model.route != self.__backend.get_current_route:
-            return ft.View(view_model.route)
+            return view_model.empty_view()
 
         self.__renderer.use_bucket = self.__backend.dependency_bucket.get(
             view_model.route
         )
         self.__renderer.create_controls()
 
-        return view_model.build(
-            self.__renderer.settings_object_parsers
-        )
+        return view_model.build(self.__renderer)
     
     async def _view_pop(self, e: ft.ViewPopEvent) -> NoReturn:
         self.__backend.page.views.pop()
@@ -619,7 +619,7 @@ class Unpacker:
     def __init__(self, renderer: Renderer) -> NoReturn:
         self.__renderer: Renderer = renderer
         self.unpack_data: Any
-        self.unpacker: Callable
+        self.unpacker: Callable = Tools.unpack_validator
         self.update_del: Callable
     
     def unpack(self, settings: dt.ControlSettings) -> dt.ControlSettings:
@@ -628,7 +628,6 @@ class Unpacker:
             Tools.update_del_dict, main_dict=settings, 
             delete_key=ControlKeys.UNPACK
         )
-        self.unpacker = partial(Tools.unpack_validator, self.unpack_data)
         return self.unpack_function()
     
     def unpack_function(self) -> dt.ControlSettings:
@@ -639,6 +638,7 @@ class Unpacker:
             return self.update_del()
         
         res = self.unpacker(
+            self.unpack_data,
             key=RefsKeys.CODE_REFS, 
             get_method=self.__renderer.get_ref, use_dict=True
         )
@@ -646,6 +646,7 @@ class Unpacker:
             return self.update_del(update_dict=res)
         
         res = self.unpacker(
+            self.unpack_data,
             key=RefsKeys.STYLING, 
             get_method=self.__renderer.style_sheet.get_style
         )

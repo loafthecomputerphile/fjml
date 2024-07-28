@@ -27,6 +27,7 @@ from . import utils
 from .object_enums import *
 
 if TYPE_CHECKING:
+    from .display.renderer import Renderer
     from . import operation_classes as opc
 
 
@@ -116,33 +117,50 @@ class ControlModel:
     
     def __init__(
         self, name: str = "", control_name: str = "",
-        control: ControlType = None, settings: ControlSettings = ControlSettings(), 
-        valid_settings: Sequence[str] = []
+        control: ControlType = None, settings: ControlSettings = {}
     ) -> NoReturn:
         self.name: str = name
         self.control_name: str = control_name
         self.control: ControlType = control
-        valid_settings.append(ControlKeys.UNPACK)
-        self.settings: ControlSettings = Tools.valid_param_filter(
-            settings, valid_settings
-        )
+        self.settings: ControlSettings = settings
         
-    def build(self, parser: Callable[[...], ControlSettings]) -> ControlType:
+    def build(self, renderer: Renderer) -> ControlType:
         return self.control(
-            **parser(
+            **renderer.settings_object_parsers(
                 self.settings,
                 types=self.control_name,
                 ignore=True
             )
         ) if callable(self.control) else self.control
+
+class NestedControlModel:
+    __slots__ = [
+        "control_name", "control", "settings"
+    ]
+    
+    def __init__(
+        self, control_name: str = "",
+        control: ControlType = None, settings: ControlSettings = {}
+    ) -> NoReturn:
+        self.control_name: str = control_name
+        self.control: ControlType = control
+        self.settings: ControlSettings = settings
         
+    def build(self, renderer: Renderer) -> ControlType:
+        return self.control(
+            **renderer.settings_object_parsers(
+                self.settings,
+                types=self.control_name,
+                ignore=True
+            )
+        ) if callable(self.control) else self.control
 
 class UIViews:
     __slots__ = ["route", "settings"]
     def __init__(self, route: str, settings: ControlSettings = {}, valid_settings: Sequence[str] = []) -> NoReturn:
         ...
     
-    def build(self, parser: Callable[[...], ControlSettings]) -> ft.View:
+    def build(self, renderer: Renderer) -> ft.View:
         ...
 
 
@@ -355,7 +373,7 @@ class CompiledModel:
         self.program_name: str = program_name
         self.type_hints: TypeHintMap = type_hints
         self.dependencies: opc.ControlDependencies = dependencies
-        self.control_settings: Sequence[str] = control_settings
+        self.control_settings: Mapping[str, Sequence[str]] = control_settings
 
 @dataclass
 class Header:

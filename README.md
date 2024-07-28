@@ -33,7 +33,7 @@
                 "alignment":{"control_type":"alignment.center"},
                 "border_radius":10,
                 "padding":{
-                    "control_type":"padding.symmentric",
+                    "control_type":"padding.symmetric",
                     "settings":{"horizontal":10, "vertical":8}
                 },
                 "width":200,
@@ -80,15 +80,13 @@ class Actions(dt.EventContainer):
 
 ```
 
-
-
 ```python title="main.py"
 from fjml import load_program, Compiler, data_types as dt
 from path.to.program import Actions
 import flet as ft
 
 class Paths:
-    PROGRAM: str = "path\\to\\program"
+    PROGRAM: str = "path\\to\\program_folder"
     COMPILED: str = "path\\to\\compiled_program\\compiled.fjml"
 
 class App:
@@ -195,8 +193,8 @@ FJML allows the use of python code to perform actions such as API calls, functio
            ```python
 
            class Data:
-               fname: str
-               lname: str
+               f_name: str
+               l_name: str
                age: int
            
            class Actions(dt.EventContainer):
@@ -206,8 +204,8 @@ FJML allows the use of python code to perform actions such as API calls, functio
                    self.group_assign(
                        data,
                        {
-                           "fname":"John",
-                           "lname":"Doe",
+                           "f_name":"John",
+                           "l_name":"Doe",
                            "age":21
                        }
                    )
@@ -284,7 +282,7 @@ FJML allows the use of python code to perform actions such as API calls, functio
         #### This class is used to generate and register Flet views. Its main use is in the Flet's `Page.on_route_change` event.
         | Methods       | Attributes                                             | Return    | Description                                                 |
         | ------------- | ------------------------------------------------------ | --------- | ----------------------------------------------------------- |
-        | **set_view**  | `route_name: str`, `view_settings: dt.ControlSettings` | `None`    | adds a `UIViews` to the compiled_model ui mapping attribute |
+        | **set_view**  | `route_name: str`, `view_settings: dt.ControlSettings` | `None`    | adds a `UIViews` to the compiled_model UI mapping attribute |
         | **add_view**  | `view: ft.View`                                        | `None`    | adds a Flet view control to the page views                  |
         | **make_view** | `view_model: UIViews`                                  | `ft.View` | generates a Flet view control from a `UIViews` type         |
 
@@ -312,7 +310,7 @@ FJML allows the use of python code to perform actions such as API calls, functio
 
 This format separates the header data, imports, controls and display UI.
 
-- ## Header:
+- #### Header:
     Headers is primarily map based and thus requires one to use keys and values unlike the list based forms like the rest are. 
     The keys in this block consists of:
     
@@ -407,12 +405,22 @@ This format separates the header data, imports, controls and display UI.
             ```
 
 - #### Imports:
-    Imports are called using the file name of the UI file defined inside the import folder defined by the key `"source"`. if the import folder includes different folders the use of the key `"folder"` can be used to indicate the specific folder inside the main import folder where you want to import from. e.g:
+    Imports are called using the file name of the UI file defined inside the import folder defined by the key `"source"`. If the import folder includes different folders the use of the key `"folder"` can be used to indicate the specific folder inside the main import folder where you want to import from. e.g:
         - `{"source:"container_ui"}`
         - `{source:["user_ui", "admin_ui"], "folder":"person_ui_folder"}`
 
 - #### Controls:
     controls can be named using the `"var_name"` key and then can be called and used in the python `"Action"` class using `"self.name_text"` or in another control using a dictionary using the `"refs"` key and the control name as its value. e.g: `{"refs":"name_text"}`
+    Format example:
+    ```json
+    {
+        "var_name":"foo",
+        "control_type":"imported/registered control name",
+        "settings":{
+            ...
+        }
+    }
+    ```
 
 - #### UI:
     The UI section is used to define the route views used by you program.
@@ -463,8 +471,6 @@ Style sheet Format:
 styles can be used by then adding the `"_unpack"` attribute inside the control's `"settings"` dictionary with the dictionary formats:
 - `{"styles":"{name}.{sub-name}"}`
 - or `{"styles":"{name}.{sub-name} {name1}.{sub_name}"}` if multiple styles are needed
-
-
 
 
 ## Other FJML UI features include
@@ -579,7 +585,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
     }
     ```
 
-    #### Attribute and index calli
+    #### Attribute and index calling
 
     The `idx` key works for both dictionaries and index based sequences.
 
@@ -695,7 +701,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
     import flet as ft
 
     class Paths:
-        PROGRAM: str = "path\\to\\program"
+        PROGRAM: str = "path\\to\\program_folder"
         COMPILED:str = "path\\to\\compiled_program\\compiled.fjml"
 
     class App:

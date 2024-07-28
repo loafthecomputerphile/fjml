@@ -41,9 +41,11 @@ loop_refs_check: Callable[[Mapping], str] = partial(
 )
 
 
+
 class ReferenceBooleanParams:
     STYLING: tuple[str, ...] = (RefsKeys.REFS, RefsKeys.CODE_REFS, RefsKeys.STYLING)
     NO_STYLING: tuple[str, ...] = (RefsKeys.REFS, RefsKeys.CODE_REFS)
+    EVENTS: tuple[str, ...] = (EventKeys.ROUTE, EventKeys.FUNC, EventKeys.CALL, EventKeys.EVAL)
 
 
 class Renderer:
@@ -55,10 +57,12 @@ class Renderer:
         "use_bucket", "type_check", "get_ref",
         "control_names", "depth_count", "__loop_depth",
         "__loop_values", "unpack_function",
-        "control_model_filter", "control_model_map"
+        "control_model_filter", "control_model_map",
+        "ref_bool_params", "sanitizer"
     )
     
     def __init__(self, backend: Backend) -> NoReturn:
+        self.ref_bool_params: ReferenceBooleanParams = ReferenceBooleanParams()
         self.control_model_filter: Callable[[str], bool]
         self.control_model_map: Callable[[str], tuple[str, dt.ControlModel]]
         self.type_check: Callable[[dt.ControlSettings, dt.TypeHints], dt.ControlSettings]
@@ -112,19 +116,21 @@ class Renderer:
         return self.__loop_values
     
     @property
-    def control_settings(self) -> Sequence[str]:
+    def control_settings(self) -> Mapping[str, Sequence[str]]:
         return self.backend.compiled_program.control_settings
 
     def get_dependent_controls(self) -> Sequence[str]:
         data: Sequence[str] = self.use_bucket
         data.extend(self.backend.preserve_control_bucket.data)
-        return data
-
-    def clear_unnecessary(self, valid_vars: Sequence[str] = []) -> NoReturn:
+        
+        func: Callable[[str], bool] = partial(operator.contains, data)
         x: str
-        for x in itertools.filterfalse(partial(operator.contains, valid_vars), self._controls):
+        
+        for x in itertools.filterfalse(func, self._controls):
             self.set_attr(x)
-
+            
+        return data
+    
     def init_controls(self) -> NoReturn:
         var_name: str
         for var_name in self._controls:
@@ -143,14 +149,15 @@ class Renderer:
         return self.type_hints.get(name, {})
 
     def create_controls(self) -> NoReturn:
-        control: Callable[[dt.ControlModel, Callable], dt.ControlType]
+        control: dt.ControlModel
         var_name: str
         data: Sequence[str] = self.get_dependent_controls()
-        self.clear_unnecessary(data)
         
         for var_name, control in self.control_gen(data):
-            self.set_attr(var_name, control(self.settings_object_parsers))
-        
+            self.set_attr(
+                var_name, 
+                control.build(self)
+            )
 
     def ui_parser(self, control: dt.ControlDict) -> dt.ControlType:
         self.register_controls(control)
@@ -265,7 +272,7 @@ class Renderer:
         self, settings: dt.ControlSettings, valid_settings: Sequence[str] = [], 
         types: str = "", ignore: bool = False
     ) -> dt.ControlSettings:
-        data: Any
+        data: Union[Mapping, dt.NamedControlDict]
         i: int
         key: str
         
@@ -275,9 +282,8 @@ class Renderer:
             if not settings:
                 return {}
             
-            valid_settings.append(ControlKeys.UNPACK)
             settings = self.tools.valid_param_filter(
-                settings, valid_settings
+                settings, valid_settings, ControlKeys.UNPACK
             )
         
         if not settings:
@@ -290,20 +296,26 @@ class Renderer:
         )
         
         for key in self.tools.get_keys_with_dict(settings):
-            if self.tools.mass_any_contains(ReferenceBooleanParams.STYLING, settings[key]):
+            if self.tools.mass_any_contains(self.ref_bool_params.STYLING, settings[key]):
                 self.call_references(settings, key, settings[key], True)
             elif ControlKeys.CONTROL_TYPE in settings[key]:
                 self.settings_to_controls(settings, key, settings[key], True)
         
         for key in self.tools.get_keys_with_list(settings):
-            for i, data in filter(lambda x: isinstance(x[1], Mapping), enumerate(settings[key])):
-                if self.tools.mass_any_contains(ReferenceBooleanParams.NO_STYLING, data):
+            for i, data in filter(lambda x: isinstance(x[1], (Mapping, dt.NestedControlModel)), enumerate(settings[key])):
+                if isinstance(data, dt.NestedControlModel):
+                    settings[key][i] = data.build(self)
+                elif self.tools.mass_any_contains(self.ref_bool_params.NO_STYLING, data):
                     self.call_references(settings[key], i, data)
                 elif ControlKeys.CONTROL_TYPE in data:
                     self.settings_to_controls(settings[key], i, data)
+                
+        for key, data in filter(lambda x: isinstance(x[1], dt.NestedControlModel), settings.items()):
+            settings[key] = data.build(self)
         
         return self.type_check(
-            settings, ({} if not types else self.get_hints(types))
+            settings, 
+            self.type_hints.get(types, {})
         )
 
     def call_references(
@@ -340,10 +352,10 @@ class Renderer:
         
         if use_loop and data[ControlKeys.CONTROL_TYPE] == ControlKeys.LOOP:
             container[key] = self.run_ui_loop(data)
-            self.depth_count, self.__loop_values = 0, []
+            self.depth_count = 0
+            self.__loop_values.clear()
             return
-
-        #print(data)
+        
         new_data: Any = self.try_get_attribute(data)
         if new_data:
             container[key] = new_data
@@ -357,6 +369,9 @@ class Renderer:
         i: int
         
         for key in self.tools.get_keys_with_dict(settings):
+            if not self.tools.mass_any_contains(self.ref_bool_params.EVENTS, settings[key]):
+                continue
+            
             if EventKeys.ROUTE in settings[key]:
                 self.event_parsers.route(key, settings[key], settings)
             elif EventKeys.FUNC in settings[key]:
