@@ -16,7 +16,7 @@ except:
 
 from functools import lru_cache, partial
 import importlib, inspect, os, io, json, operator
-import errno, dill, base64, copy, lzma, types
+import errno, dill, base64, copy, gzip, types
 
 from flet import Control
 
@@ -396,16 +396,16 @@ class CompiledFileHandler:
     
     @staticmethod
     def save(file_path: str, data: dt.CompiledModel) -> NoReturn:
-        file: lzma.LZMAFile
-        with lzma.open(file_path, "wb") as file:
+        file: gzip.GzipFile
+        with gzip.open(file_path, "wb") as file:
             dill.dump(data, file)
     
     @staticmethod
     def load(file_path: str) -> dt.CompiledModel:
-        file: lzma.LZMAFile
+        file: gzip.GzipFile
         if not os.path.exists(file_path):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file_path)
-        with lzma.open(file_path, "rb") as file:
+        with gzip.open(file_path, "rb") as file:
             return dill.load(file)
 
 
@@ -413,14 +413,14 @@ class ObjectCompressor:
     
     @staticmethod
     def compress(obj: Any) -> bytes:
-        return lzma.compress(
-            dill.dumps(obj)
+        return gzip.compress(
+            dill.dumps(obj), 9
         )
     
     @staticmethod
     def decompress(compressed_obj: bytes) -> Any:
         return dill.loads(
-            lzma.decompress(compressed_obj)
+            gzip.decompress(compressed_obj)
         )
 
 class TypeHintSerializer:

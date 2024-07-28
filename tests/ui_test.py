@@ -23,5 +23,5 @@ class App:
 
 
 if __name__ == "__main__":
-    app: App = App()
+    app: App = App(True)
     ft.app(target=app.run)

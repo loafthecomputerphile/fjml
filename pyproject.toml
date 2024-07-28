@@ -8,7 +8,7 @@ version = "0.0.1"
 authors = [
   { name="loafthecomputerphile", email="loafdcomputerphile@gmail.com" },
 ]
-description = "A small example package"
+description = "A JSON based markup language which translates JSON files into Flet UI "
 readme = "README.md"
 keywords = ["flet", "gui", "markup language"]
 requires-python = ">=3.8"
