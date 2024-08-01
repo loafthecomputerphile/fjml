@@ -12,6 +12,8 @@ except:
     from typing_extensions import NoReturn
 
 import flet as ft
+from flet.matplotlib_chart import MatplotlibChart
+from flet.plotly_chart import PlotlyChart
 
 from .registry.control_register import ControlRegistryOperations
 from . import data_types as dt, utils
@@ -55,8 +57,8 @@ class Update:
         self.populous: Sequence[dt.ControlRegisterInterface] = list(itertools.starmap(
             self.make_interface,
             (
-                (ft.matplotlib_chart.MatplotlibChart, "MatplotlibChart"),
-                (ft.plotly_chart.PlotlyChart, "PlotlyChart"),
+                (MatplotlibChart, "MatplotlibChart"),
+                (PlotlyChart, "PlotlyChart"),
                 (None, "colors", "flet_core"),
                 (None, "icons", "flet_core"),
             )

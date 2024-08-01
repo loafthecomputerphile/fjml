@@ -1,5 +1,6 @@
 from copy import deepcopy
 import io
+from operator import eq, itemgetter
 from dataclasses import dataclass
 from typing import Optional, Sequence, Mapping
 try:
@@ -32,10 +33,10 @@ class ControlRegistryOperations:
     def __find_index(cls, name: str, data: Sequence[dt.ControlRegistryModel]) -> int:
         i: int
         model: dt.ControlRegistryModel
+        get_name = itemgetter(ControlRegKeys.NAME)
 
-        for i, model in enumerate(data):
-            if name == model[ControlRegKeys.NAME]:
-                return i
+        for i, model in filter(lambda x: eq(name, get_name(x)), enumerate(data)):
+            return i
         return -1
 
     @classmethod
@@ -53,11 +54,11 @@ class ControlRegistryOperations:
                     )
             except IndexError as e:
                 raise IndexError(
-                    "Registry file is out of parady. Please reset your registry file"
+                    "Registry file is out of parity. Please reset your registry file"
                 )
         if len(control_types) - 1 > i:
             raise IndexError(
-                "Registry file is out of parady. Please reset your registry file"
+                "Registry file is out of parity. Please reset your registry file"
             )
         return control_types
 
@@ -93,8 +94,12 @@ class ControlRegistryOperations:
     ) -> dt.ControlRegistryJsonScheme:
         key: str
 
-        for key in [ControlRegKeys.CONTROLS, ControlRegKeys.CONTROL_TYPES]:
-            reg1[key].extend(reg2[key])
+        reg1[ControlRegKeys.CONTROLS].extend(
+            reg2[ControlRegKeys.CONTROLS]
+        )
+        reg1[ControlRegKeys.CONTROL_TYPES].extend(
+            reg2[ControlRegKeys.CONTROL_TYPES]
+        )
         return reg1
 
     @classmethod

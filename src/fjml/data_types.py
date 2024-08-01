@@ -27,6 +27,7 @@ from . import utils
 from .object_enums import *
 
 if TYPE_CHECKING:
+    from .display.renderer import Renderer
     from . import operation_classes as opc
 
 
@@ -36,6 +37,7 @@ CallableInstance: TypeAlias = Any
 JsonDict: TypeAlias = dict[str, Any]
 IndexType: TypeAlias = Union[str, int, None]
 TypeHints: TypeAlias = Mapping[str, Type]
+SerializedTypeHints: TypeAlias = Mapping[str, str]
 TypeHintMap: TypeAlias = Mapping[str, TypeHints]
 ControlType: TypeAlias = Union[ft.Control, enum.Enum, types.FunctionType, CallableInstance]
 ControlMap: TypeAlias = dict[str, ControlType]
@@ -51,7 +53,7 @@ class ControlJsonScheme(TypedDict):
     source: str
     attr: str
     valid_settings: Sequence[str]
-    type_hints: TypeHints
+    type_hints: SerializedTypeHints
     control: Callable
 
 
@@ -107,42 +109,63 @@ class UserInterfaceDict(TypedDict):
     UI: Sequence[RouteDict]
 
 
+class NestedControlModel:
+    
+    __slots__ = ("control_name", "control", "settings")
+    
+    def __init__(
+        self, control_name: str = "",
+        control: ControlType = None, settings: ControlSettings = {}
+    ) -> NoReturn:
+        self.control_name: str = control_name
+        self.control: ControlType = control
+        self.settings: ControlSettings = settings
+    
+    def build(self, parser: types.MethodType[Renderer]) -> ControlType:
+        if callable(self.control):
+            return self.control(
+                **parser(
+                    self.settings,
+                    types=self.control_name,
+                    ignore=True
+                )
+            )
+            
+        return self.control
 
 class ControlModel:
-    __slots__ = [
-        "name", "control_name", "bundle_name", 
-        "control", "settings"
-    ]
+    
+    __slots__ = ("name", "control_name", "control", "settings")
     
     def __init__(
         self, name: str = "", control_name: str = "",
-        control: ControlType = None, settings: ControlSettings = ControlSettings(), 
-        valid_settings: Sequence[str] = []
+        control: ControlType = None, settings: NestedControlModel = NestedControlModel()
     ) -> NoReturn:
         self.name: str = name
         self.control_name: str = control_name
         self.control: ControlType = control
-        valid_settings.append(ControlKeys.UNPACK)
-        self.settings: ControlSettings = Tools.valid_param_filter(
-            settings, valid_settings
-        )
-        
-    def build(self, parser: Callable[[...], ControlSettings]) -> ControlType:
-        return self.control(
-            **parser(
-                self.settings,
-                types=self.control_name,
-                ignore=True
+        self.settings: NestedControlModel = settings
+    
+    def build(self, parser: types.MethodType[Renderer]) -> ControlType:
+        if callable(self.control):
+            return self.control(
+                **parser(
+                    self.settings,
+                    types=self.control_name,
+                    ignore=True
+                )
             )
-        ) if callable(self.control) else self.control
-        
+            
+        return self.control
+    
+
 
 class UIViews:
     __slots__ = ["route", "settings"]
     def __init__(self, route: str, settings: ControlSettings = {}, valid_settings: Sequence[str] = []) -> NoReturn:
         ...
     
-    def build(self, parser: Callable[[...], ControlSettings]) -> ft.View:
+    def build(self, parser: types.MethodType[Renderer]) -> ft.View:
         ...
 
 
@@ -186,7 +209,7 @@ class ParamGenerator:
     def save_program(self, compiled_program: CompiledModel) -> NoReturn:
         utils.CompiledFileHandler.save(self.compile_path, compiled_program)
     
-    def parse_extensions(self):
+    def parse_extensions(self) -> NoReturn:
         self.header.parse_extensions(
             inspect.currentframe().f_back.f_back.f_globals
         )
@@ -224,16 +247,18 @@ class ParamGenerator:
         if not isinstance(self.ui_code, Mapping):
             raise TypeError("File, ui.json, is not of type dict")
         
-        if "Header" not in self.ui_code:
+        if MarkupKeys.HEADER not in self.ui_code:
             raise KeyError("Key, 'Header' was not found")
 
 
 class ObjectSource:
-    __slots__ = ["obj", "source", "is_class"]
+    
+    __slots__ = ("obj", "source", "is_class")
+    
     def __init__(self, obj: Any, source: str = "") -> NoReturn:
         self.obj: Any = obj
         self.source: str = source
-        self.is_class = False
+        self.is_class: bool
         
         if not self.source:
             self.source = self.obj.__module__
@@ -242,28 +267,29 @@ class ObjectSource:
 
     
 class ControlRegistryModel:
-    __slots__ = ["name", "source", "attr", "is_awaitable", "object_args", "return_dict"]
+    
+    __slots__ = ("name", "source", "attr", "is_awaitable", "object_args", "return_dict")
 
-    def __init__(self, name: str, attr: str, source: ObjectSource = ObjectSource(type(None)), control: ControlType = None) -> NoReturn:
+    def __init__(
+        self, name: str, attr: str, source: ObjectSource = ObjectSource(type(None)), 
+        control: ControlType = None, serialize: bool = True
+    ) -> NoReturn:
         self.name: str = name
         self.source: Union[ObjectSource, str] = source 
         if control:
             self.source = ObjectSource(control)
         self.attr: str = attr
-        self.object_args: Sequence[str] =  []
-        hints: TypeHintMap = {}
+        self.object_args: Sequence[str]
+        hints: SerializedTypeHints = {}
         
-        self.object_args = self.generate_args()
         if not self.source.is_class:
-            hints = utils.TypeHintSerializer.serialize(
-                Tools.get_hints(self.source.obj)
-            )
+            self.object_args = self.generate_args()
+            hints = self.serialize() if serialize else Tools.get_hints(self.source.obj)
         elif issubclass(self.source.obj, enum.Enum):
             self.object_args = []
         else:
-            hints = utils.TypeHintSerializer.serialize(
-                Tools.get_hints(self.source.obj)
-            )
+            self.object_args = self.generate_args()
+            hints = self.serialize() if serialize else Tools.get_hints(self.source.obj)
 
         self.source = self.source.source
 
@@ -275,7 +301,12 @@ class ControlRegistryModel:
             type_hints=hints,
             control=control
         )
-
+    
+    def serialize(self) -> TypeHints:
+        return utils.TypeHintSerializer.serialize(
+            Tools.get_hints(self.source.obj)
+        )
+    
     def generate_args(self, is_enum: bool = False) -> Sequence[str]:
         obj: Any = self.source.obj
         return Tools.get_object_args(obj) if callable(obj) else []
@@ -355,7 +386,7 @@ class CompiledModel:
         self.program_name: str = program_name
         self.type_hints: TypeHintMap = type_hints
         self.dependencies: opc.ControlDependencies = dependencies
-        self.control_settings: Sequence[str] = control_settings
+        self.control_settings: Mapping[str, Sequence[str]] = control_settings
 
 @dataclass
 class Header:
@@ -394,10 +425,11 @@ class Header:
         if self.action:
             return
         
-        self.action = Importer(global_data).run_import(
+        self.action = Importer(global_data).import_attr(
             self.action_import[ImportKeys.FROM],
             self.action_import[ImportKeys.IMPORT]
         )
+        
         del self.action_import
         
     
@@ -474,10 +506,10 @@ class Importer:
     
     __slots__ = ("outer_global")
     
-    def __init__(self, outer_global: Mapping):
+    def __init__(self, outer_global: Mapping) -> NoReturn:
         self.outer_global: Mapping = outer_global
     
-    def importer(self, module_name: str) -> types.ModuleType:
+    def import_module(self, module_name: str) -> types.ModuleType:
         loc: Mapping = {}
         if module_name.strip().startswith("."):
             name_split: str = module_name.split(".")
@@ -487,13 +519,13 @@ class Importer:
         exec(f"import {module_name} as module", self.outer_global, loc)
         return loc["module"]
     
-    def run_import(self, module_name: str, attr: str) -> Any:
-        return getattr(self.importer(module_name), attr, None)
+    def import_attr(self, module_name: str, attr: str) -> Any:
+        return getattr(self.import_module(module_name), attr, None)
 
 
 class UIImports:
     
-    __slots__ = ["module", "imports", "prefix", "module_name", "importer"]
+    __slots__ = ("module", "imports", "prefix", "module_name", "importer")
     
     def __init__(self, module_name: str, imports: Sequence[str], outer_global: dict, module_prefix: str = "") -> NoReturn:
         self.module_name: str = module_name
@@ -510,7 +542,7 @@ class UIImports:
         obj_name: str
         obj: Any
         
-        self.module = self.importer.importer(self.module_name)
+        self.module = self.importer.import_module(self.module_name)
         if not self.module:
             return []
         

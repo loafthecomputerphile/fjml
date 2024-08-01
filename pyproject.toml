@@ -8,14 +8,15 @@ version = "0.0.1"
 authors = [
   { name="loafthecomputerphile", email="loafdcomputerphile@gmail.com" },
 ]
-description = "A small example package"
+description = "A JSON based markup language which translates JSON files into Flet UI "
 readme = "README.md"
 keywords = ["flet", "gui", "markup language"]
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3.8",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "License :: OSI Approved :: Apache 2.0 License",
+    "Operating System :: Apache Software License",
+    "File Formats :: JSON"
 ]
 dependencies = [
   "flet>=0.22.0",
