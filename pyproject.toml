@@ -27,5 +27,5 @@ dependencies = [
 fjml = "fjml.cli_tooling:main"
 
 [project.urls]
-Homepage = "https://github.com/pypa/sampleproject"
-Issues = "https://github.com/pypa/sampleproject/issues"
+Homepage = "https://github.com/loafthecomputerphile/fjml"
+Issues = "https://github.com/loafthecomputerphile/fjml/issues"
