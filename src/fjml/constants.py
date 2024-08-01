@@ -8,7 +8,7 @@ ARCHIVE_FORMAT: Final[str] = "zip"
 OPERATION_ARGS: Final[Sequence[str]] = ["make", "registry"]
 MARKUP_SPECIFIC_CONTROLS: Final[Sequence[str]] = ["loop", "loop_index"]
 CONTROL_REGISTRY_PATH: Final[str] = str(
-    Path.PurePath(MODULE_PATH, "registry\\control_registry.json")
+    Path.PurePath(MODULE_PATH, "registry\\control_registry")
 )
 
 NULL: Final[str] = "<NULL>"

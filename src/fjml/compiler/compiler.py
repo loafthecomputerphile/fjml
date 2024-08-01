@@ -77,7 +77,7 @@ class Compiler:
         self.imports_path: str = self.params.imports_path
         self.code: dt.JsonDict = self.params.ui_code
         self.style_sheet: opc.StyleSheet
-        self.used_controls: set[str] = set(["View"])
+        self.used_controls: set[str] = set([ControlKeys.VIEW])
         self.custom_controls: dt.ControlRegistryJsonScheme
         self.dependent_refs: opc.ControlDependencies = opc.ControlDependencies()
         self.are_registries_joined: bool = False
@@ -100,7 +100,7 @@ class Compiler:
         
         if custom_controls:
             self.custom_controls = ControlRegistryOperations.generate_dict(
-                [dt.ControlRegistryModel(**control) for control in custom_controls]
+                map(lambda control: dt.ControlRegistryModel(**control), custom_controls)
             )
     
     def parse_custom_controls(self, data: Sequence[dt.ExtensionType]) -> Sequence[dt.ControlRegisterInterface]:
@@ -185,6 +185,7 @@ class Compiler:
             self.control_param_types[name] = utils.TypeHintSerializer.deserialize(
                 control[ControlRegKeys.TYPE_HINTS]
             )
+            
             self.control_settings[name] = control[ControlRegKeys.VALID_SETTINGS]
 
     def __load_controls(self) -> NoReturn:
@@ -368,11 +369,10 @@ class Compiler:
                 route_dict[ControlKeys.ROUTE], 
                 route_dict[ControlKeys.SETTINGS]
             )
-            
             self.parsed_ui[route_dict[ControlKeys.ROUTE]] = opc.UIViews(
                 route_dict[ControlKeys.ROUTE], 
                 self.parse_nest(
-                    self.param_filter("View", route_dict)
+                    self.param_filter(ControlKeys.VIEW, route_dict)
                 )
             )
 

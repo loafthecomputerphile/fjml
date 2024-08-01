@@ -1,28 +1,26 @@
-from enum import StrEnum
 
-
-class ImportKeys(StrEnum):
+class ImportKeys:
     IMPORT: str = "import"
     FROM: str = "from"
     USING: str ="using"
     SOURCE: str = "source"
 
 
-class EventKeys(StrEnum):
+class EventKeys:
     FUNC: str = "func"
     CALL: str = "call"
     EVAL: str = "eval"
     ROUTE: str = "route"
 
 
-class RefsKeys(StrEnum):
+class RefsKeys:
     REFS: str = "refs"
     CODE_REFS: str = "code_refs"
     STYLING: str = "styling"
     GROUP: str = "group"
 
 
-class ControlKeys(StrEnum):
+class ControlKeys:
     ROUTE: str = "route"
     VAR_NAME: str = "var_name"
     CONTROL_TYPE: str = "control_type"
@@ -30,9 +28,10 @@ class ControlKeys(StrEnum):
     UNPACK: str = "_unpack"
     ATTR: str = 'attr'
     LOOP: str = "loop"
+    VIEW: str = "View"
 
 
-class ControlRegKeys(StrEnum):
+class ControlRegKeys:
     SOURCE: str = "source"
     NAME: str = "name"
     ATTR: str = "attr"
@@ -43,7 +42,7 @@ class ControlRegKeys(StrEnum):
     CONTROL: str = "control"
 
 
-class MarkupKeys(StrEnum):
+class MarkupKeys:
     HEADER: str = "Header"
     IMPORTS: str = "Imports"
     CONTROLS: str = "Controls"
@@ -51,13 +50,13 @@ class MarkupKeys(StrEnum):
     SKIP: str = "<SKIP>"
 
 
-class PropertyKeys(StrEnum):
+class PropertyKeys:
     GET: str = "get"
     SET: str = "set"
     DEL: str = "del"
 
 
-class LoopKeys(StrEnum):
+class LoopKeys:
     LOOP: str = "loop"
     ITERATOR: str = "iterator"
     CONTROL: str = "control"

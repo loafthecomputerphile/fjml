@@ -9,6 +9,8 @@ from typing import (
     get_type_hints
 )
 
+import typing
+
 try:
     from typing import NoReturn
 except:
@@ -33,31 +35,6 @@ if TYPE_CHECKING:
 @lru_cache(16)
 def import_module(name: str, package=None) -> types.ModuleType:
     return importlib.import_module(name, package)
-
-
-class TypeInstances:
-    
-    
-    def is_map(data: Any) -> bool:
-        return isinstance(data, Mapping)
-    
-    def is_seq(data: Any) -> bool:
-        return isinstance(data, Sequence)
-    
-    def is_str(data: Any) -> bool:
-        return isinstance(data, str)
-    
-    def is_int(data: Any) -> bool:
-        return isinstance(data, int)
-    
-    def is_float(data: Any) -> bool:
-        return isinstance(data, float)
-    
-    def is_float(data: Any) -> bool:
-        return isinstance(data, float)
-    
-    def is_x(data: Any, x: Type) -> bool:
-        return isinstance(data, x)
 
 
 class ObjectSource:
@@ -126,7 +103,10 @@ class Utilities:
 
     @staticmethod
     def get_object_args(func: Callable[[...], Any]) -> Sequence[str]:
-        return [] if not callable(func) else list(
+        if not callable(func):
+            return []
+        
+        return list(
             map(
                 operator.attrgetter("name"), 
                 inspect.signature(func).parameters.values()
@@ -259,9 +239,11 @@ class Utilities:
     def multi_dict_get(data: Mapping, items: Sequence[str]) -> Any:
         result: Any
         item: str
+        
         for item in items:
             result = data.get(item, None)
-            if data: return result
+            if data: 
+                return result
 
     @staticmethod
     def update_del_dict(main_dict: Mapping, delete_key: str, update_dict: Mapping = {}) -> Mapping:
@@ -272,17 +254,25 @@ class Utilities:
             main_dict.update(update_dict)
         
         del main_dict[delete_key]
+        
         return main_dict
 
     @staticmethod
     def unpack_validator(unpack_dict: Mapping, key: str, get_method: Callable, use_dict: bool = False) -> dt.JsonDict:
         value: Any = unpack_dict.get(key, None)
+        res: Anu
         if not value or not isinstance(value, str):
             return {}
         
-        res: Any = get_method(unpack_dict if use_dict else value)
+        if use_dict:
+            res = get_method(unpack_dict)
+        else:
+            res = get_method(value)
+            
+        if isinstance(res, Mapping):
+            return res
         
-        return res if isinstance(res, Mapping) else {}
+        return {}
     
     @staticmethod
     def validate_index(
@@ -308,12 +298,14 @@ class Utilities:
 
     @staticmethod
     def parse_reference(cls: Renderer, content: Mapping) -> Any:
+        if not isinstance(content, Mapping):
+            return
+        
         return cls.get_ref(
             Utilities.search_and_sanitize(
                 content, cls.depth_count, cls.loop_values
             )
-        ) if isinstance(content, Mapping) else None
-
+        )
 
     @staticmethod
     def sanitize(data: Mapping, depth_count: int, loop_values: Sequence) -> int:
@@ -323,16 +315,22 @@ class Utilities:
         idx: int = data[LoopKeys.IDX]
         vals: Any = loop_values[idx[0]]
         
-        return vals[idx[1]] if is_sequence_not_str(vals) else vals
+        if not is_sequence_not_str(vals):
+            return vals
+        
+        return vals[idx[1]]
 
 
     @staticmethod
-    def process_loop_itertor(
+    def process_loop_iterator(
         cls: Renderer, iterator_value: Union[Mapping, Sequence]
     ) -> Sequence:
+        
+        if is_sequence_not_str(iterator_value):
+            return iterator_value
 
         if isinstance(iterator_value, Mapping):
-            value: Any = iterator_value.get(LoopKeys.RANGE, NULL)
+            value: Any = iterator_value.get(LoopKeys.RANGE, None)
             if is_sequence_not_str(value):
                 if len(value) > 3:
                     value = value[:3]
@@ -353,9 +351,7 @@ class Utilities:
                 return []
             
             return result
-        elif is_sequence_not_str(iterator_value):
-            return iterator_value
-
+        
         return []
 
 
@@ -397,7 +393,7 @@ class CompiledFileHandler:
     @staticmethod
     def save(file_path: str, data: dt.CompiledModel) -> NoReturn:
         file: gzip.GzipFile
-        with gzip.open(file_path, "wb") as file:
+        with open(file_path, "wb") as file:
             dill.dump(data, file)
     
     @staticmethod
@@ -405,7 +401,7 @@ class CompiledFileHandler:
         file: gzip.GzipFile
         if not os.path.exists(file_path):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file_path)
-        with gzip.open(file_path, "rb") as file:
+        with open(file_path, "rb") as file:
             return dill.load(file)
 
 
@@ -458,21 +454,17 @@ class RegistryFileOperations:
     def load_file(cls) -> dt.ControlRegistryJsonScheme:
         registry: io.TextIOWrapper
         if not os.path.exists(CONTROL_REGISTRY_PATH):
-            with open(CONTROL_REGISTRY_PATH, "w") as registry:
-                json.dump(EMPTY_REGISTRY_FILE, registry, indent=4)
-        with open(CONTROL_REGISTRY_PATH, "r") as registry:
-            return json.load(registry)
+            with open(CONTROL_REGISTRY_PATH, "wb") as registry:
+                dill.dump(EMPTY_REGISTRY_FILE, registry, dill.HIGHEST_PROTOCOL)
+        with open(CONTROL_REGISTRY_PATH, "rb") as registry:
+            return dill.load(registry)
         raise RegistryFileNotFoundError()
 
     @classmethod
-    def save_file(
-        cls, file_data: dt.JsonDict, dump_kwargs: Mapping = {}
-    ) -> NoReturn:
+    def save_file(cls, file_data: dt.JsonDict) -> NoReturn:
         registry: io.TextIOWrapper
-        if not dump_kwargs.get("indent", None):
-            dump_kwargs["indent"] = 4
-        with open(CONTROL_REGISTRY_PATH, "w") as registry:
-            return json.dump(file_data, registry, **dump_kwargs)
+        with open(CONTROL_REGISTRY_PATH, "wb") as registry:
+            return dill.dump(file_data, registry, dill.HIGHEST_PROTOCOL)
         raise RegistryFileNotFoundError()
 
 

@@ -135,7 +135,7 @@ class Backend:
             self.__add_make_view(route)
     
     def get_attr(self, attr_name: str, default: Any = None) -> Any:
-        return getattr(self, attr_name, None)
+        return getattr(self, attr_name, default)
     
     def set_attr(self, attr_name: str, value: Any = None) -> NoReturn:
         setattr(self, attr_name, value)
