@@ -9,7 +9,11 @@
 ```json title="ui.json"
 {
     "Header":{
-        "program_name":"Example"
+        "program_name":"Example",
+        "action_import":{
+            "import":"Actions",
+            "from":".path.to.func.file"
+        },
     },
     "Controls":[
         {
@@ -77,7 +81,6 @@ class Actions(dt.EventContainer):
         self.colors: Colors = Colors()
         self.cross_align: str = ft.CrossAxisAlignment.CENTER
         self.main_align: str = ft.MainAxisAlignment.CENTER
-
 ```
 
 ```python title="main.py"
@@ -649,6 +652,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
         ```json
         {
             "Header":{
+                ...,
                 "action_import":{
                     "import":"Actions",
                     "from":".ui_test_program.func"
@@ -670,6 +674,7 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
     ```json
     {
         "Header":{
+            ...,
             "extensions":[
                 {
                     "using":"fm",
