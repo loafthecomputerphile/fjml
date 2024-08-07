@@ -1,7 +1,6 @@
 from __future__ import annotations
 from functools import partial
 from copy import deepcopy
-import operator, itertools
 from typing import (
     Any,
     Union,
@@ -10,8 +9,7 @@ from typing import (
     Mapping,
     TypeAlias,
     TYPE_CHECKING,
-    Iterator,
-    Generator
+    Iterator
 )
 
 try:
@@ -87,68 +85,36 @@ class Renderer:
         )
     
     @property
-    def property_bucket(self) -> opc.PropertyContainer:
-        return self.backend.property_bucket
-    
-    @property
-    def object_bucket(self) -> opc.ObjectContainer:
-        return self.backend.object_bucket
-    
-    @property
-    def style_sheet(self) -> opc.StyleSheet:
-        return self.backend.style_sheet
-    
-    @property
-    def _ui(self) -> Mapping[str, opc.UIViews]:
-        return self.backend.compiled_program.ui
-    
-    @property
-    def _control_map(self) -> dt.ControlMap:
-        return self.backend.compiled_program.control_map
-    
-    @property
-    def _controls(self) -> dt.ParsedControls:
-        return self.backend.compiled_program.controls
-    
-    @property
-    def type_hints(self) -> dt.TypedDict:
-        return self.backend.compiled_program.type_hints
-        
-    @property
     def loop_values(self) -> Sequence:
         return self.__loop_values
     
-    @property
-    def control_settings(self) -> Mapping[str, Sequence[str]]:
-        return self.backend.compiled_program.control_settings
-
     def get_dependent_controls(self) -> Sequence[str]:
         x: str
         data: Sequence[str] = self.use_bucket
         data.extend(self.backend.preserve_control_bucket.data)
         
-        for x in itertools.filterfalse(partial(operator.contains, data), self._controls):
+        for x in filter(lambda x: x not in data, self.backend.controls):
             self.set_attr(x)
             
         return data
     
     def init_controls(self) -> NoReturn:
         var_name: str
-        for var_name in self._controls:
+        for var_name in self.backend.controls:
             self.control_names.append(var_name)
             if not self.has_attr(var_name):
                 self.set_attr(var_name)
     
-    def control_gen(self) -> Generator[tuple[str, dt.ControlModel], None, None]:
+    def control_gen(self) -> Iterator[tuple[str, dt.NestedControlModel]]:
         x: str
-        return (
-            (x, self._controls[x])
-            for x in filter(partial(operator.contains, self._controls), self.get_dependent_controls())
-        )
         
-    
+        return map(
+            lambda x: (x, self.backend.controls[x]), 
+            filter(lambda x: x in self.backend.controls, self.get_dependent_controls())
+        )
+
     def create_controls(self) -> NoReturn:
-        control: dt.ControlModel
+        control: dt.NestedControlModel
         var_name: str
         
         for var_name, control in self.control_gen():
@@ -233,16 +199,16 @@ class Renderer:
     def generate_list_control(self, call_name: str, content: str, control: dt.JsonDict) -> ParsedLoopItem:
         if content:
             control[ControlKeys.SETTINGS] = self.tools.search_and_sanitize(
-                control.get(ControlKeys.SETTINGS, {}), 
+                control.get(ControlKeys.SETTINGS, {}),
                 self.depth_count, self.__loop_values
             )
+                
             return self.create_control(control)
         
-        return self.object_bucket.call_object(
-            call_name, 
-            self.settings_object_parsers(
+        return self.backend.object_bucket.call_object(
+            call_name, self.settings_object_parsers(
                 self.tools.search_and_sanitize(
-                    control.get(ControlKeys.SETTINGS, {}), 
+                    control.get(ControlKeys.SETTINGS, {}),
                     self.depth_count, self.__loop_values
                 ), 
                 ignore=True
@@ -250,7 +216,7 @@ class Renderer:
         )
 
     def create_control(self, code: dt.ControlDict) -> dt.ControlType:
-        control: dt.ControlType = self._control_map[
+        control: dt.ControlType = self.backend.control_map[
             code[ControlKeys.CONTROL_TYPE]
         ]
         
@@ -260,7 +226,7 @@ class Renderer:
         return control(
             **self.settings_object_parsers(
                 code.get(ControlKeys.SETTINGS, {}), 
-                self.control_settings[code[ControlKeys.CONTROL_TYPE]],
+                self.backend.control_settings[code[ControlKeys.CONTROL_TYPE]],
                 code[ControlKeys.CONTROL_TYPE]
             )
         )
@@ -273,8 +239,10 @@ class Renderer:
         key: str
         i: int
         
+        if not settings: 
+            return {}
+        
         if not ignore:
-            if not settings: return {}
             settings = self.tools.valid_param_filter(
                 settings, valid_settings, ControlKeys.UNPACK
             )
@@ -289,9 +257,7 @@ class Renderer:
         )
         
         for key, data in filter(lambda x: isinstance(x[1], dt.NestedControlModel), settings.items()):
-            settings[key] = data.build(
-                self.settings_object_parsers
-            )
+            settings[key] = data.build(self.settings_object_parsers)
         
         for key in self.tools.get_keys_with_dict(settings):
             if self.tools.mass_any_contains(self.ref_bool_params.STYLING, settings[key]):
@@ -302,9 +268,7 @@ class Renderer:
         for key in self.tools.get_keys_with_list(settings):
             for i, data in filter(self.list_parse_filter_func, enumerate(settings[key])):
                 if isinstance(data, dt.NestedControlModel):
-                    settings[key][i] = data.build(
-                        self.settings_object_parsers
-                    )
+                    settings[key][i] = data.build(self.settings_object_parsers)
                 elif self.tools.mass_any_contains(self.ref_bool_params.NO_STYLING, data):
                     self.call_references(settings[key], i, data)
                 elif ControlKeys.CONTROL_TYPE in data:
@@ -312,7 +276,7 @@ class Renderer:
         
         return self.type_check(
             settings, 
-            self.type_hints.get(types, {})
+            self.backend.type_hints.get(types, {})
         )
 
     def call_references(
@@ -325,7 +289,7 @@ class Renderer:
         
         if use_style:
             if RefsKeys.STYLING in data:
-                container[key] = self.style_sheet.get_style(
+                container[key] = self.backend.style_sheet.get_style(
                     data[RefsKeys.STYLING]
                 )
                 return
@@ -383,7 +347,7 @@ class Renderer:
     def try_get_attribute(self, data: dt.JsonDict) -> Any:
         if ControlKeys.ATTR in data:
             return getattr(
-                self._control_map[data[ControlKeys.CONTROL_TYPE]], 
+                self.backend.control_map[data[ControlKeys.CONTROL_TYPE]], 
                 data[ControlKeys.ATTR], 
                 None
             )

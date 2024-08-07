@@ -50,11 +50,19 @@ class MarkupKeys:
     SKIP: str = "<SKIP>"
 
 
+class CommandType:
+    MAKE: str = "make"
+    REGISTRY: str = "registry"
+
 class PropertyKeys:
     GET: str = "get"
     SET: str = "set"
     DEL: str = "del"
 
+class RegistryAction:
+    DELETE = "delete"
+    UPDATE = "update"
+    RESET = "reset"
 
 class LoopKeys:
     LOOP: str = "loop"

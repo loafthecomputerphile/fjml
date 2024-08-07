@@ -3,8 +3,8 @@ from typing import(
     Any, Union, 
     Final, Callable, 
     Sequence, Mapping, 
-    Generator, Type, 
-    TypeAlias
+    Generator, TypeAlias, 
+    Iterable, Iterator
 )
 
 try:
@@ -49,6 +49,16 @@ VALID_KEYS: Final[Sequence[str]] = [
     MarkupKeys.CONTROLS, MarkupKeys.HEADER
 ]
 valid_imports: tuple[dt.ThirdPartyExtension, dt.UIImports] = (dt.ThirdPartyExtension, dt.UIImports)
+
+
+def control_filter(keys: set[str], controls: Sequence[str]) -> Callable[[Iterable], Iterator[str]]:
+    def func(name: str) -> bool:
+        return not (
+            name in keys or name in constants.MARKUP_SPECIFIC_CONTROLS 
+            or name not in controls
+        )
+    return functools.partial(filter, func)
+
 
 class Compiler:
 
@@ -164,19 +174,19 @@ class Compiler:
         name: str
         control: dt.ControlJsonScheme
         control_keys: set[str] = set(self.controls.keys())
+        c_filter: Callable[[Iterable], Iterator[str]] = control_filter(
+            control_keys, 
+            control_scheme[ControlRegKeys.CONTROLS]
+        )
 
-        for name in self.used_controls:
-            if name in control_keys or name in constants.MARKUP_SPECIFIC_CONTROLS:
-                continue
+        for name in c_filter(self.used_controls):
             
-            if name not in control_scheme[ControlRegKeys.CONTROLS]:
-                continue
-
             control = control_scheme[ControlRegKeys.CONTROL_TYPES][
                 control_scheme[ControlRegKeys.CONTROLS].index(name)
             ]
+            
             control_keys.add(name)
-                
+            
             self.controls[name] = getattr(
                 import_module(control[ControlRegKeys.SOURCE], None), 
                 control[ControlRegKeys.ATTR]
@@ -389,11 +399,9 @@ class Compiler:
             del res[MarkupKeys.SKIP]
             yield res
 
-
 @timeit
 def load_program(compiled_path: str, page: ft.Page) -> ft.Page:
     return Backend(
-        CompileHandler.load(compiled_path), 
-        page
+        CompileHandler.load(compiled_path), page
     ).initialize()
 

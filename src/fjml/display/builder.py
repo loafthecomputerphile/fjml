@@ -24,6 +24,7 @@ from .. import (
     utils
 )
 
+
 def method_filter(method_name: str) -> bool:
     return not method_name.startswith("__")
 
@@ -36,11 +37,18 @@ class Backend:
     
     def __init__(self, compiled_program: dt.CompiledModel, page: ft.Page) -> NoReturn:
         self.preserve_control_bucket: opc.PreserveControlContainer
+        self.methods = compiled_program.methods
+        self.ui: Mapping[str, opc.UIViews] = compiled_program.ui
+        self.control_map: dt.ControlMap = compiled_program.control_map
+        self.controls: dt.ParsedControls = compiled_program.controls
+        self.type_hints: dt.TypeHintMap = compiled_program.type_hints
+        self.control_settings: Mapping[str, Sequence[str]] = (
+            compiled_program.control_settings
+        )
         self.view_operations: opc.ViewOperations
         self._importer: Callable[[Backend], NoReturn]
         self._page_setup: Callable[[Backend], NoReturn]
         self.dict_to_control: Callable[[Renderer, dt.ControlDict], dt.ControlType]
-        self.compiled_program: opc.CompiledModel = compiled_program
         self.eval_locals: opc.EvalLocalData = opc.EvalLocalData()
         self.page: ft.Page = page
         self.__renderer: Renderer = None
@@ -59,7 +67,7 @@ class Backend:
     
     def initialize(self) -> ft.Page:
         if not self.__initialize:
-            self.__add_methods(self.compiled_program.methods)
+            self.__add_methods(self.methods)
             self.setup_functions.call_functions()
             self.__renderer = Renderer(self)
             self.dict_to_control = self.__renderer.ui_parser
@@ -117,7 +125,7 @@ class Backend:
             del self.page.views[self.get_routes.index(route)]
             
         self.view_operations.add_view(
-            self.view_operations.make_view(self.__renderer._ui[route])
+            self.view_operations.make_view(self.ui[route])
         )
         self.update()
     
@@ -131,7 +139,7 @@ class Backend:
             raise InitializationError()
         
         self.__add_make_view("/")
-        for route in filter(self.__valid_route, self.__renderer._ui):
+        for route in filter(self.__valid_route, self.ui):
             self.__add_make_view(route)
     
     def get_attr(self, attr_name: str, default: Any = None) -> Any:

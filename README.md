@@ -109,6 +109,33 @@ if __name__ == "__main__":
     ft.app(target=app.run)
 ```
 
+---
+
+## CLI Tooling:
+FJML comes with 2 CLI commands and each have specific parameters:
+- `registry` :
+
+    The registry command is a categorical command which automatically modifies the registry file which contains of all Flet controls of your current Flet installation.
+    | Choice     | Value Type | Action                |
+    | ---------- | ---------- | --------------------- |
+    | **delete** | `str`      | deletes registry file |
+    | **reset**  | `str`      | resets registry file  |
+    | **update** | `str`      | updates registry file |
+    Example:
+    - `fjml registry update`
+
+    The reset command should be used after installation to ensure proper functioning of fjml
+
+- `make` :
+    
+    The make command generates an FJML folder containing all the needed files for running your project.
+    make has one mandatory parameter, `--name`, and one optional parameter, `--path`.
+    `--name` generates the name of your project while `--path` directs where that project is generated. If path is not entered it will use the current directory.
+
+    Example:
+    - `fjml make --name Hello World`
+
+---
 
 ## Python Integration
 
@@ -696,33 +723,33 @@ styles can be used by then adding the `"_unpack"` attribute inside the control's
     ```
 
     All imports must already be installed or exist in an importable path.
-<br></br>
-<br></br>
 
-- # **Running the app**
+---
+
+## Running the app
    
-    ```python title="main.py"
-    from fjml import load_program, Compiler, data_types as dt
-    import flet as ft
+```python title="main.py"
+from fjml import load_program, Compiler, data_types as dt
+import flet as ft
 
-    class Paths:
-        PROGRAM: str = "path\\to\\program_folder"
-        COMPILED:str = "path\\to\\compiled_program\\compiled.fjml"
+class Paths:
+    PROGRAM: str = "path\\to\\program_folder"
+    COMPILED: str = "path\\to\\compiled_program\\compiled.fjml"
 
-    class App:
+class App:
 
-        def __init__(self, compile_run: bool = False) -> None:
-            if not compile_run:
-                return
-                 
-            compiler: Compiler = Compiler(Paths.PROGRAM, Paths.COMPILED)
-            compiler.compile()
-            
-        async def run(self, page: ft.Page):
-            page = load_program(Paths.COMPILED, page)
-            page.go("/")
+    def __init__(self, compile_run: bool = False) -> None:
+        if not compile_run:
+            return
+                
+        compiler: Compiler = Compiler(Paths.PROGRAM, Paths.COMPILED)
+        compiler.compile()
+        
+    async def run(self, page: ft.Page):
+        page = load_program(Paths.COMPILED, page)
+        page.go("/")
 
-    if __name__ == "__main__":
-        app: App = App(compile_run=True)
-        ft.app(target=app.run)
-    ```
+if __name__ == "__main__":
+    app: App = App(compile_run=True)
+    ft.app(target=app.run)
+```
