@@ -32,8 +32,12 @@ class Actions(dt.EventContainer):
 
 STYLE_SHEET_TEXT: Final[Mapping] = {
     "base_text_style":{
-        "size": "20",
-        "weight": "w800"
+        "size": 40,
+        "weight": "w800",
+        "color":{
+            "control_type":"colors",
+            "attr":"RED_700"
+        }
     }
 }
 
@@ -66,18 +70,21 @@ USER_INTERFACE_FILE_TEXT: Final[Mapping] = {
     "Controls": [],
     "UI": [
         {
-            "route": "Home",
-            "views": {
-                "control_type": "Container",
-                "settings": {
-                    "content": {"refs": "text"},
-                    "bgcolor": "grey50",
-                    "alignment": {
-                        "control_type": "align_center",
-                        "settings": {},
-                    },
-                    "expand": True,
-                },
+            "route": "/",
+            "settings": {
+                "controls":[
+                    {
+                        "control_type": "Container",
+                        "settings": {
+                            "content": {"refs": "text"},
+                            "bgcolor": "grey50",
+                            "alignment": {
+                                "control_type": "alignment.center"
+                            },
+                            "expand": True,
+                        }
+                    }
+                ]
             },
         }
     ],

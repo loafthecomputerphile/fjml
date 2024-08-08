@@ -61,6 +61,7 @@ invalid_sources: Sequence[str] = [
     "tests",
 ]
 
+
 ACTION_CHOICES: tuple[str, str] = (
     RegistryAction.RESET, RegistryAction.DELETE
 )
@@ -233,7 +234,7 @@ def registry_action(action: str) -> NoReturn:
         if os.path.exists(CONTROL_REGISTRY_PATH):
             os.remove(CONTROL_REGISTRY_PATH)
         return Update()
-    
+  
     raise argparse.ArgumentError(
         message=f"Invalid subparser argument for `registry`. Valid choices are: {ACTION_CHOICES}"
     )
