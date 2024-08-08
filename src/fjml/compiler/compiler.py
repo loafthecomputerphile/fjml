@@ -201,7 +201,6 @@ class Compiler:
             )
             
             self.control_settings[name] = control[ControlRegKeys.VALID_SETTINGS]
-        print(list(self.controls.keys()))
 
     def __load_controls(self) -> NoReturn:
         if not self.controls_registry:
@@ -405,7 +404,7 @@ class Compiler:
             del res[MarkupKeys.SKIP]
             yield res
 
-@timeit
+
 def load_program(compiled_path: str, page: ft.Page) -> ft.Page:
     return Backend(
         CompileHandler.load(compiled_path), page
