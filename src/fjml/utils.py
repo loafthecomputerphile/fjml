@@ -9,16 +9,14 @@ from typing import (
     get_type_hints
 )
 
-import typing
-
 try:
     from typing import NoReturn
 except:
     from typing_extensions import NoReturn
 
 from functools import lru_cache, partial
-import importlib, inspect, os, io, json, operator
-import errno, dill, base64, copy, gzip, types
+import importlib, inspect, os, io, operator
+import errno, dill, base64, copy, types
 
 from flet import Control
 
@@ -117,7 +115,7 @@ class Utilities:
     def valid_param_filter(settings: dt.ControlSettings, valid_settings: list[str], extra: Union[str, Sequence[str]]) -> dt.ControlSettings:
         x: tuple[str, Any]
         
-        if not valid_settings:
+        if not (valid_settings and settings):
             return {}
         
         if extra:
@@ -392,32 +390,18 @@ class CompiledFileHandler:
     
     @staticmethod
     def save(file_path: str, data: dt.CompiledModel) -> NoReturn:
-        file: gzip.GzipFile
+        file: io.BufferedWriter
         with open(file_path, "wb") as file:
             dill.dump(data, file)
     
     @staticmethod
     def load(file_path: str) -> dt.CompiledModel:
-        file: gzip.GzipFile
+        file: io.BufferedReader
         if not os.path.exists(file_path):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file_path)
         with open(file_path, "rb") as file:
             return dill.load(file)
 
-
-class ObjectCompressor:
-    
-    @staticmethod
-    def compress(obj: Any) -> bytes:
-        return gzip.compress(
-            dill.dumps(obj), 9
-        )
-    
-    @staticmethod
-    def decompress(compressed_obj: bytes) -> Any:
-        return dill.loads(
-            gzip.decompress(compressed_obj)
-        )
 
 class TypeHintSerializer:
     
@@ -452,7 +436,7 @@ class RegistryFileOperations:
 
     @classmethod
     def load_file(cls) -> dt.ControlRegistryJsonScheme:
-        registry: io.TextIOWrapper
+        registry: Union[io.BufferedReader, io.BufferedWriter]
         if not os.path.exists(CONTROL_REGISTRY_PATH):
             with open(CONTROL_REGISTRY_PATH, "wb") as registry:
                 dill.dump(EMPTY_REGISTRY_FILE, registry, dill.HIGHEST_PROTOCOL)
@@ -462,7 +446,7 @@ class RegistryFileOperations:
 
     @classmethod
     def save_file(cls, file_data: dt.JsonDict) -> NoReturn:
-        registry: io.TextIOWrapper
+        registry: io.BufferedWriter
         with open(CONTROL_REGISTRY_PATH, "wb") as registry:
             return dill.dump(file_data, registry, dill.HIGHEST_PROTOCOL)
         raise RegistryFileNotFoundError()

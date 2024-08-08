@@ -4,7 +4,6 @@ import pathlib as Path
 
 MODULE_PATH: str = Path.PurePath(__file__).parent
 
-ARCHIVE_FORMAT: Final[str] = "zip"
 OPERATION_ARGS: Final[Sequence[str]] = ["make", "registry"]
 MARKUP_SPECIFIC_CONTROLS: Final[Sequence[str]] = ["loop", "loop_index"]
 CONTROL_REGISTRY_PATH: Final[str] = str(
@@ -19,8 +18,7 @@ EMPTY_REGISTRY_FILE: Final[Mapping] = {
     "ControlTypes": [],
 }
 
-FUNCTION_FILE_TEXT: Final[str] = """
-import flet as ft
+FUNCTION_FILE_TEXT: Final[str] = """import flet as ft
 from fjml import data_types as dt
 
 class Actions(dt.EventContainer):
@@ -84,48 +82,3 @@ USER_INTERFACE_FILE_TEXT: Final[Mapping] = {
         }
     ],
 }
-
-STAGNANT_KEYS: Final[Sequence[str]] = [
-    "view_operations",
-    "control_loader",
-    "tools",
-    "compiled_program",
-    "object_bucket",
-    "style_sheet",
-    "setup_func_caller",
-    "add_property",
-    "add_methods",
-    "update",
-    "change_route",
-    "get_current_route",
-    "create_ui",
-    "get_attr",
-    "set_attr",
-    "property_bucket",
-    "dependency_bucket",
-    "preserve_control_bucket",
-    "_importer",
-    "_page_setup",
-    "initialize",
-]
-
-PRIMARY_STAGNANT_KEYS: Final[Sequence[str]] = [
-    "view_operations",
-    "control_loader",
-    "tools",
-    "compiled_program",
-    "object_bucket",
-    "style_sheet",
-    "setup_func_caller",
-    "add_property",
-    "add_methods",
-    "update",
-    "change_route",
-    "get_current_route",
-    "create_ui",
-    "get_attr",
-    "set_attr",
-    "property_bucket",
-    "dependency_bucket",
-    "preserve_control_bucket",
-]

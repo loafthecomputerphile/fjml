@@ -1,10 +1,12 @@
-from argparse import Namespace, ArgumentParser, _SubParsersAction
-from typing import Any, Callable, Sequence, Mapping
-import operator, itertools
-import os, io, time, shutil
-import json
-import inspect
+import argparse, inspect
+from typing import Any, Callable, Sequence
+import itertools, json, os, io, operator
 from functools import partial
+
+interface_data: list[tuple] = [
+    (None, "colors", "flet_core"),
+    (None, "icons", "flet_core")
+]
 
 try:
     from typing import NoReturn
@@ -12,20 +14,36 @@ except:
     from typing_extensions import NoReturn
 
 import flet as ft
-from flet.matplotlib_chart import MatplotlibChart
-from flet.plotly_chart import PlotlyChart
 
+try:
+    from flet.matplotlib_chart import MatplotlibChart
+    interface_data.append(
+        (MatplotlibChart, "MatplotlibChart")
+    )
+except ImportError:
+    pass
+
+try:
+    from flet.plotly_chart import PlotlyChart
+    interface_data.append(
+        (PlotlyChart, "PlotlyChart")
+    )
+except ImportError:
+    pass
+
+
+from .object_enums import *
 from .registry.control_register import ControlRegistryOperations
 from . import data_types as dt, utils
 from .constants import (
     USER_INTERFACE_FILE_TEXT,
     IMPORT_FILE_TEXT,
     FUNCTION_FILE_TEXT,
-    OPERATION_ARGS,
-    CONTROL_REGISTRY_PATH
+    CONTROL_REGISTRY_PATH, 
+    STYLE_SHEET_TEXT
 )
 
-Tools: utils.Utilities = utils.Utilities()
+
 
 invalid_sources: Sequence[str] = [
     "utils",
@@ -43,6 +61,10 @@ invalid_sources: Sequence[str] = [
     "tests",
 ]
 
+action_choices: tuple[str, str, str] = (
+    RegistryAction.UPDATE, RegistryAction.DELETE, RegistryAction.RESET
+)
+
 def not_type(obj: Any) -> bool:
     return type(obj) != type
 
@@ -51,26 +73,25 @@ def is_class_func(obj: Any) -> bool:
 
 class Update:
     
-    __slots__ = ("populous", "added_names")
+    __slots__ = ("populous", "added_names", "tools")
     
     def __init__(self) -> NoReturn:
+        self.tools: utils.Utilities = utils.Utilities()
         self.populous: Sequence[dt.ControlRegisterInterface] = list(itertools.starmap(
-            self.make_interface,
-            (
-                (MatplotlibChart, "MatplotlibChart"),
-                (PlotlyChart, "PlotlyChart"),
-                (None, "colors", "flet_core"),
-                (None, "icons", "flet_core"),
-            )
+            self.make_interface, interface_data
         ))
-        self.added_names: Sequence[str] = list(map(operator.itemgetter("name"), self.populous))
+        
+        self.added_names: Sequence[str] = list(
+            map(operator.itemgetter(1), interface_data)
+        )
+        
         self.first_populate()
         self.second_populate()
         self.generate()
     
     def generate(self) -> NoReturn:
         ControlRegistryOperations.generate_dict(
-            [dt.ControlRegistryModel(**content) for content in self.populous],
+            map(lambda control: dt.ControlRegistryModel(**control), self.populous),
             True
         )
     
@@ -93,6 +114,7 @@ class Update:
                 self.populous.append(
                     maker(flet_attr, attr_name)
                 )
+                
                 self.added_names.append(attr_name)
     
     def second_populate(self) -> NoReturn:
@@ -119,7 +141,7 @@ class Update:
                     continue
                 
                 ret_partial = partial(
-                    Tools.control_to_registry_interface, 
+                    self.tools.control_to_registry_interface, 
                     control=module_attr, 
                     use_source=True, 
                     try_name=module_attr_name
@@ -158,10 +180,14 @@ class Update:
 class ProjectMaker:
     
     def __init__(self, path: str, name: str) -> NoReturn:
-        self.generate_project(path, name)
+        self.generate_project(path, name.strip())
 
     def make_python_file(self, path: str, filename: str, code: str) -> NoReturn:
         file: io.TextIOWrapper
+        
+        if os.path.exists(os.path.join(path, filename)):
+            return
+        
         with open(os.path.join(path, filename), "w") as file:
             file.write(code)
 
@@ -171,20 +197,26 @@ class ProjectMaker:
             json.dump(data, file, indent=4)
 
     def make_folder(self, path_with_name: str) -> NoReturn:
-        os.makedirs(path_with_name)
+        if not os.path.exists(path_with_name):
+            os.makedirs(path_with_name)
 
     def generate_project(self, path: str, name: str) -> NoReturn:
-        project_path: str = os.path.join(path if path else os.getcwd(), name)
-        try:
-            self.make_folder(project_path)
-        except (FileExistsError, OSError):
-            return print("Directory already exists")
+        folder_name: str = name.replace(" ", "_").lower()
+        
+        project_path: str = os.path.join(path, folder_name)
+            
+        self.make_folder(project_path)
 
         # Make JSON file
-        USER_INTERFACE_FILE_TEXT["Header"]["action_import"]["from"] = f".{name}.func"
+        USER_INTERFACE_FILE_TEXT[MarkupKeys.HEADER]["program_name"] = name
+        USER_INTERFACE_FILE_TEXT[MarkupKeys.HEADER]["action_import"]["from"] = (
+            f"{folder_name}.func"
+        )
+        
         self.make_json_file(project_path, "ui.json", USER_INTERFACE_FILE_TEXT)
-        self.make_json_file(project_path, "style_sheet.style.json", USER_INTERFACE_FILE_TEXT)
+        self.make_json_file(project_path, "style_sheet.style.json", STYLE_SHEET_TEXT)
         self.make_python_file(project_path, "func.py", FUNCTION_FILE_TEXT)
+        self.make_python_file(project_path, "__init__.py", "")
 
         # Make subfolder
         subfolder_path: str = os.path.join(project_path, "extra")
@@ -193,46 +225,69 @@ class ProjectMaker:
 
 
 def registry_action(action: str) -> NoReturn:
-    if action == "update":
-        Update()
-    elif action == "delete":
+    if action == RegistryAction.UPDATE:
+        return Update()
+    elif action == RegistryAction.DELETE:
         if os.path.exists(CONTROL_REGISTRY_PATH):
             os.remove(CONTROL_REGISTRY_PATH)
-    elif action == "reset":
+        return
+    elif action == RegistryAction.RESET:
         if os.path.exists(CONTROL_REGISTRY_PATH):
             os.remove(CONTROL_REGISTRY_PATH)
-        Update()
+        return Update()
+    
+    raise argparse.ArgumentError(
+        message=f"Invalid subparser argument for `registry`. Valid choices are: {action_choices}"
+    )
 
 
 def main() -> NoReturn:
-    parser: ArgumentParser = ArgumentParser(
+    parser: argparse.ArgumentParser
+    update_parser: argparse.ArgumentParser
+    project_parser: argparse.ArgumentParser
+    subparsers: argparse._SubParsersAction
+    
+    parser = argparse.ArgumentParser(
         prog="FJML", description="Generate an FJML project or update/delete registry file"
     )
-    subparsers: _SubParsersAction = parser.add_subparsers(dest="parser_type")
+    subparsers = parser.add_subparsers(dest="parser_type")
     
-    update_parser: ArgumentParser = subparsers.add_parser("registry")
+    update_parser = subparsers.add_parser(CommandType.REGISTRY)
+    
     update_parser.add_argument(
         "action",
-        choices=["update", "delete", "reset"],
+        choices=action_choices,
         help="Updates or deletes the control registry file",
     )
     
-    project_parser: ArgumentParser = subparsers.add_parser("make")
+    project_parser = subparsers.add_parser(CommandType.MAKE)
+    
     project_parser.add_argument(
         "--name",
         help="Name of the project.",
+        default="new_project"
     )
     project_parser.add_argument(
         "--path",
         help="Path where the project will be created",
+        default=os.getcwd()
     )
 
-    args: Namespace = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
-    if args.parser_type == OPERATION_ARGS[0]:
+    if args.parser_type == CommandType.MAKE:
+        if not args.name:
+            argparse.ArgumentError(
+                message="Argument 'name' for subparser 'make' is empty. Argument 'name' is a required argument"
+            )
+        
         ProjectMaker(args.path, args.name)
-    elif args.parser_type == OPERATION_ARGS[1]:
+    elif args.parser_type == CommandType.REGISTRY:
         registry_action(args.action)
+    else:
+        raise argparse.ArgumentError(
+            message="No subparsers where used. Please use either 'registry' or 'make' as a subparser"
+        )
 
 if __name__ == "__main__":
     main()

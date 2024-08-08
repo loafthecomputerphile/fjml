@@ -1,5 +1,4 @@
 from copy import deepcopy
-import io
 from operator import eq, itemgetter
 from dataclasses import dataclass
 from typing import Optional, Sequence, Mapping
@@ -35,7 +34,7 @@ class ControlRegistryOperations:
         model: dt.ControlRegistryModel
         get_name = itemgetter(ControlRegKeys.NAME)
 
-        for i, model in filter(lambda x: eq(name, get_name(x)), enumerate(data)):
+        for i, model in filter(lambda x: name == get_name(x), enumerate(data)):
             return i
         return -1
 
@@ -122,7 +121,6 @@ class ControlRegistryOperations:
         control_registry_models: Sequence[dt.ControlRegistryModel],
         edit_registry: bool = False,
     ) -> Optional[dt.ControlRegistryJsonScheme]:
-        registry: io.TextIOWrapper
         models: dt.ControlRegistryModel
         name: str
         idx: int

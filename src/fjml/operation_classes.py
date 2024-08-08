@@ -295,14 +295,14 @@ class Reference:
     def __get_reference(self, ref: str, is_code: bool = False) -> Any:
         result: Any
         
-        if is_code and ref not in self.__renderer._controls:
-            if self.__renderer.property_bucket.contains(ref):
-                return self.__renderer.property_bucket.call(
+        if is_code and ref not in self.__renderer.backend.controls:
+            if self.__renderer.backend.property_bucket.contains(ref):
+                return self.__renderer.backend.property_bucket.call(
                     ref, PropertyKeys.GET
                 )
             elif ref in self.attr_filter(self.__renderer.backend):
                 return self.__get_attr(ref)
-        elif ref in self.__renderer._controls and not is_code:
+        elif ref in self.__renderer.backend.controls and not is_code:
             return self.__get_attr(ref)
     
     @staticmethod
@@ -312,16 +312,6 @@ class Reference:
             return operator.getitem(value, index)
         except:
             return None
-        '''
-        if index == None or not isinstance(index, (str, int)):
-            return None
-        if isinstance(value, Mapping) and isinstance(index, str):
-            return value.get(index, None)
-        index_check: bool = utils.is_sequence_not_str(value) and isinstance(index, int)
-        if index_check and index > -1:
-            return None if index > len(value)-1 else value[index]
-        '''
-
 
 class CallableObject:
     __slots__ = ("obj", "name", "valid_args")
@@ -377,7 +367,7 @@ class ViewOperations:
         if isinstance(view_settings, Mapping):
             raise err.InvalidTypeError("view_settings", view_settings, Mapping)
         
-        self.__backend.compiled_program._ui[route_name] = UIViews(
+        self.__backend.ui[route_name] = UIViews(
             route_name, 
             Tools.valid_param_filter(
                 view_setting,
@@ -491,7 +481,7 @@ class StyleSheet:
         except ValueError:
             return tuple(path.split("."))
         
-        return map(operator.methodcaller("split", sep="."), splitted)
+        return map(lambda x: x.split("."), splitted)
         
     def __validate_style_sheet(self) -> NoReturn:
         invalid_keys: Sequence[str] = list(
@@ -618,13 +608,13 @@ class ControlLoader:
         control: dt.ControlType
         
         for name, control in names:
-            self.__backend.compiled_program.control_map[name] = control
-            self.__backend.compiled_program.type_hints[name] = Tools.get_hints(control)
+            self.__backend.control_map[name] = control
+            self.__backend.type_hints[name] = Tools.get_hints(control)
 
     def add_controls(self, names: Sequence[str]) -> NoReturn:
         name: str
         registered_controls: dt.ControlJsonScheme
-        func = partial(operator.contains, self.__backend.compiled_program.control_map)
+        func = partial(operator.contains, self.__backend.control_map)
         
         if not self.control_registry:
             self.update_registry()
@@ -638,11 +628,11 @@ class ControlLoader:
                 self.control_registry[ControlRegKeys.CONTROLS].index(name)
             ]
 
-            self.__backend.compiled_program.type_hints[name] = utils.TypeHintSerializer.deserialize(
+            self.__backend.type_hints[name] = utils.TypeHintSerializer.deserialize(
                 registered_controls[ControlRegKeys.TYPE_HINTS]
             )
             
-            self.__backend.compiled_program.control_map[name] = getattr(
+            self.__backend.control_map[name] = getattr(
                 utils.import_module(registered_controls[ControlRegKeys.SOURCE]), 
                 registered_controls[ControlRegKeys.ATTR]
             )
@@ -650,13 +640,14 @@ class ControlLoader:
 
 class Unpacker:
     
-    __slots__ = ("__renderer", "unpack_data", "unpacker", "update_del")
+    __slots__ = ("__renderer", "unpack_data", "unpacker", "update_del", "get_style")
     
     def __init__(self, renderer: Renderer) -> NoReturn:
         self.__renderer: Renderer = renderer
         self.unpack_data: Any
         self.unpacker: Callable = Tools.unpack_validator
         self.update_del: Callable
+        self.get_style = self.__renderer.backend.style_sheet.get_style
     
     def unpack(self, settings: dt.ControlSettings) -> dt.ControlSettings:
         self.unpack_data = settings.get(ControlKeys.UNPACK, None)
@@ -684,7 +675,7 @@ class Unpacker:
         res = self.unpacker(
             self.unpack_data,
             key=RefsKeys.STYLING, 
-            get_method=self.__renderer.style_sheet.get_style
+            get_method=self.get_style
         )
         if res:
             return self.update_del(update_dict=res)

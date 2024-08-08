@@ -123,6 +123,9 @@ class NestedControlModel:
     
     def build(self, parser: types.MethodType[Renderer]) -> ControlType:
         if callable(self.control):
+            if not self.settings:
+                return self.control()
+            
             return self.control(
                 **parser(
                     self.settings,
@@ -309,57 +312,10 @@ class ControlRegistryModel:
     
     def generate_args(self, is_enum: bool = False) -> Sequence[str]:
         obj: Any = self.source.obj
-        return Tools.get_object_args(obj) if callable(obj) else []
+        if callable(obj):
+            return Tools.get_object_args(obj)
+        return []
 
-
-class BlockAssignment:
-    __slots__ = ["__PRIMARY", "__SECONDARY"]
-
-    def __init__(self) -> NoReturn:
-        self.__PRIMARY: bool = False
-        self.__SECONDARY: bool = False
-    
-    @property
-    def PRIMARY(self) -> bool:
-        return self.__PRIMARY
-        
-    @property
-    def SECONDARY(self) -> bool:
-        return self.__SECONDARY
-
-    def switch_primary(self) -> NoReturn:
-        if self.__PRIMARY:
-            return
-        self.__PRIMARY = True
-    
-    def switch_secondary(self) -> NoReturn:
-        if self.__SECONDARY:
-            return
-        self.__SECONDARY = True
-    
-    def __in_class_scope(self) -> bool:
-        return isinstance(
-            inspect.currentframe().f_back.f_back.f_locals.get("self", None), 
-            type(self)
-        )
-    
-    def __setattr__(self, name: str, value: Any) -> NoReturn:
-        block = [
-            "_BlockAssignment__SECONDARY", "_BlockAssignment__PRIMARY", 
-            "__in_class_scope"
-        ]
-        if name in block and not self.__in_class_scope():
-            return
-        super().__setattr__(name, value)
-    
-    def __getattribute__(self, name: str) -> Any:
-        block = [
-            "_BlockAssignment__SECONDARY", "_BlockAssignment__PRIMARY", 
-            "__in_class_scope"
-        ]
-        if name in block and not self.__in_class_scope():
-            return
-        return super().__getattribute__(name)
 
 
 class CompiledModel:
@@ -387,6 +343,7 @@ class CompiledModel:
         self.type_hints: TypeHintMap = type_hints
         self.dependencies: opc.ControlDependencies = dependencies
         self.control_settings: Mapping[str, Sequence[str]] = control_settings
+
 
 @dataclass
 class Header:
