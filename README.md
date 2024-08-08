@@ -120,7 +120,6 @@ FJML comes with 2 CLI commands and each have specific parameters:
     | ---------- | ---------- | --------------------- |
     | **delete** | `str`      | deletes registry file |
     | **reset**  | `str`      | resets registry file  |
-    | **update** | `str`      | updates registry file |
     Example:
     - `fjml registry update`
 

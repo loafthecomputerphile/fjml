@@ -115,6 +115,10 @@ class Compiler:
     
     def parse_custom_controls(self, data: Sequence[dt.ExtensionType]) -> Sequence[dt.ControlRegisterInterface]:
         value: dt.ExtensionType
+        
+        if not data:
+            return []
+        
         func: Callable[[Any], bool] = lambda x: isinstance(
             x, valid_imports
         )
@@ -197,6 +201,7 @@ class Compiler:
             )
             
             self.control_settings[name] = control[ControlRegKeys.VALID_SETTINGS]
+        print(list(self.controls.keys()))
 
     def __load_controls(self) -> NoReturn:
         if not self.controls_registry:
@@ -212,9 +217,10 @@ class Compiler:
 
     def __load_program(self) -> NoReturn:
         self.__load_controls()
-        self.__parse_imports()
         self.update_used_controls(self.style_sheet.data)
-        self.update_used_controls(self.code)
+        self.update_used_controls(self.code[MarkupKeys.UI])
+        self.update_used_controls(self.code[MarkupKeys.CONTROLS])
+        self.__parse_imports()
 
     def compile(self) -> NoReturn:
         self.__load_program()

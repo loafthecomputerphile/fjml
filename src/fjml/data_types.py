@@ -188,7 +188,7 @@ class ParamGenerator:
     
     def __init__(self, program_path: str, compile_path: str) -> NoReturn:
         self.custom_controls: Sequence[ControlJsonScheme]
-        self.program_name: str
+        self.program_name: str = "Hello World"
         self.program_path: str = program_path
         self.compile_path: str = compile_path
         self.style_sheet: JsonDict = {}
