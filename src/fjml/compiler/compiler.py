@@ -115,6 +115,10 @@ class Compiler:
     
     def parse_custom_controls(self, data: Sequence[dt.ExtensionType]) -> Sequence[dt.ControlRegisterInterface]:
         value: dt.ExtensionType
+        
+        if not data:
+            return []
+        
         func: Callable[[Any], bool] = lambda x: isinstance(
             x, valid_imports
         )
