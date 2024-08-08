@@ -61,8 +61,9 @@ invalid_sources: Sequence[str] = [
     "tests",
 ]
 
-action_choices: tuple[str, str] = (
-    RegistryAction.UPDATE, RegistryAction.DELETE
+
+ACTION_CHOICES: tuple[str, str] = (
+    RegistryAction.RESET, RegistryAction.DELETE
 )
 
 def not_type(obj: Any) -> bool:
@@ -225,20 +226,17 @@ class ProjectMaker:
 
 
 def registry_action(action: str) -> NoReturn:
-    if action == RegistryAction.UPDATE:
-        return Update()
-    elif action == RegistryAction.DELETE:
+    if action == ACTION_CHOICES[1]:
         if os.path.exists(CONTROL_REGISTRY_PATH):
             os.remove(CONTROL_REGISTRY_PATH)
         return
-    '''
-    elif action == RegistryAction.RESET:
+    elif action == ACTION_CHOICES[0]:
         if os.path.exists(CONTROL_REGISTRY_PATH):
             os.remove(CONTROL_REGISTRY_PATH)
         return Update()
-    '''
+  
     raise argparse.ArgumentError(
-        message=f"Invalid subparser argument for `registry`. Valid choices are: {action_choices}"
+        message=f"Invalid subparser argument for `registry`. Valid choices are: {ACTION_CHOICES}"
     )
 
 
@@ -257,7 +255,7 @@ def main() -> NoReturn:
     
     update_parser.add_argument(
         "action",
-        choices=action_choices,
+        choices=ACTION_CHOICES,
         help="Updates or deletes the control registry file",
     )
     
@@ -282,13 +280,13 @@ def main() -> NoReturn:
                 message="Argument 'name' for subparser 'make' is empty. Argument 'name' is a required argument"
             )
         
-        ProjectMaker(args.path, args.name)
+        return ProjectMaker(args.path, args.name)
     elif args.parser_type == CommandType.REGISTRY:
-        registry_action(args.action)
-    else:
-        raise argparse.ArgumentError(
-            message="No subparsers where used. Please use either 'registry' or 'make' as a subparser"
-        )
+        return registry_action(args.action)
+        
+    raise argparse.ArgumentError(
+        message="No subparsers where used. Please use either 'registry' or 'make' as a subparser"
+    )
 
 if __name__ == "__main__":
     main()
