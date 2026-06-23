@@ -7,7 +7,7 @@ MODULE_PATH: str = Path.PurePath(__file__).parent
 OPERATION_ARGS: Final[Sequence[str]] = ["make", "registry"]
 MARKUP_SPECIFIC_CONTROLS: Final[Sequence[str]] = ["loop", "loop_index"]
 CONTROL_REGISTRY_PATH: Final[str] = str(
-    Path.PurePath(MODULE_PATH, "registry\\control_registry")
+    Path.PurePath(MODULE_PATH, "registry", "control_registry")
 )
 
 NULL: Final[str] = "<NULL>"

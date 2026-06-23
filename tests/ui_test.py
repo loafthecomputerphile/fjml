@@ -1,11 +1,12 @@
 from src.fjml import load_program, Compiler, data_types as dt
 from .controls import test_controls as tc
+import pathlib as Path
 import flet as ft
 
 
 class Paths:
-    PROGRAM: str = "tests\\ui_test_program"
-    COMPILED: str = "tests\\ui_test_program\\compiled.fjml"
+    PROGRAM: str = str(Path.PurePath("tests", "ui_test_program"))
+    COMPILED: str = str(Path.PurePath("tests", "ui_test_program", "compiled.fjml"))
 
 
 class App:
